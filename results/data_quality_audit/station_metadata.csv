@@ -1,0 +1,92 @@
+﻿station_id,name_versions,device_versions,location_versions,canonical_station_name,latest_observation
+S06,2,1,1,Paya Lebar,2024-12-31 23:55:00
+S07,1,1,1,Lornie Road,2024-12-31 23:55:00
+S08,1,1,1,Upper Thomson Road,2024-12-31 23:55:00
+S100,1,1,1,Woodlands Road,2023-05-12 16:45:00
+S101,1,1,1,Corporation Road,2018-12-07 09:45:00
+S102,1,1,1,Semakau Landfill,2024-07-18 12:50:00
+S103,1,1,1,Dairy Farm Road,2017-03-31 08:24:59
+S104,1,1,1,Woodlands Avenue 9,2024-12-31 23:55:00
+S105,1,1,1,Admiralty Road West,2020-01-08 09:45:00
+S106,1,1,1,Pulau Ubin,2024-12-31 23:55:00
+S107,1,1,1,East Coast Parkway,2024-12-31 23:55:00
+S108,1,1,1,Marina Gardens Drive,2024-11-05 21:55:00
+S109,1,1,1,Ang Mo Kio Avenue 5,2024-12-31 23:55:00
+S11,1,1,1,Choa Chu Kang Road,2021-11-11 10:10:00
+S110,1,1,1,Serangoon North Avenue 4,2017-04-07 04:34:59
+S111,1,1,1,Scotts Road,2024-12-31 23:55:00
+S112,1,1,1,Lim Chu Kang Road,2024-12-31 23:55:00
+S113,1,1,2,Marine Parade Road,2024-12-31 23:55:00
+S114,1,1,1,Choa Chu Kang Avenue 4,2024-11-20 09:55:00
+S115,1,1,1,Tuas South Avenue 3,2024-12-31 23:55:00
+S116,1,1,1,West Coast Highway,2024-12-31 23:55:00
+S117,1,1,1,Banyan Road,2024-12-31 23:55:00
+S118,1,1,1,Handy Road,2024-01-10 09:25:00
+S119,1,1,1,Nicoll Highway,2024-12-31 23:55:00
+S120,1,1,1,Holland Road,2024-05-02 15:35:00
+S121,1,1,1,Old Choa Chu Kang Road,2024-12-31 23:55:00
+S122,1,1,1,Sembawang Road,2021-09-13 23:15:00
+S123,1,1,1,Towner Road,2024-12-31 23:55:00
+S201,2,1,1,Clementi Park,2024-12-31 23:55:00
+S202,1,1,1,S202,2023-02-28 09:20:00
+S203,2,1,1,Pasir Panjang,2024-12-31 23:55:00
+S204,1,1,1,S204,2023-10-25 15:00:00
+S205,1,1,1,S205,2023-10-23 10:35:00
+S207,2,1,1,Bedok Road,2024-12-31 23:55:00
+S208,2,1,1,Changi East Close,2024-12-31 23:55:00
+S209,2,1,1,Yishun Ring Road,2024-12-31 23:55:00
+S210,2,1,1,Woodlands Centre,2024-12-31 23:55:00
+S211,2,1,1,Kranji Road,2024-12-31 23:55:00
+S212,2,1,1,Tampines Avenue 9,2024-08-05 02:30:00
+S213,2,1,1,Coronation Walk,2024-12-31 23:55:00
+S214,2,1,1,Tanjong Rhu,2024-12-31 23:55:00
+S215,2,1,1,Geylang East Central,2024-12-31 23:55:00
+S216,3,1,1,Ang Mo Kio Avenue 10,2024-12-31 23:55:00
+S217,2,1,1,Bishan Street 13,2024-12-31 23:55:00
+S218,2,1,1,Bukit Batok Street 34,2024-12-31 23:55:00
+S219,2,1,1,Yio Chu Kang Road,2024-12-31 23:55:00
+S220,2,1,1,Compassvale Lane,2024-12-31 23:55:00
+S221,2,1,1,Hougang Avenue 1,2024-12-31 23:55:00
+S222,2,1,1,Henderson Road,2024-12-31 23:55:00
+S223,2,1,1,Margaret Drive,2024-12-31 23:55:00
+S224,2,1,1,Airport Boulevard,2024-12-31 23:55:00
+S226,2,1,1,Malan Road,2024-12-31 23:55:00
+S227,2,1,1,Woodlands Drive 62,2024-12-31 23:55:00
+S228,2,1,1,Jurong West Street 73,2024-12-31 23:55:00
+S229,2,1,1,Jurong West Street 42,2024-12-31 23:55:00
+S230,2,1,1,West Coast Road,2024-12-31 23:55:00
+S24,1,1,1,Upper Changi Road North,2024-12-31 23:55:00
+S24B,1,1,1,Upper Changi Road North,2017-04-25 11:24:59
+S29,1,1,1,Pasir Ris Drive 12,2024-12-31 23:55:00
+S33,1,1,1,Jurong Pier Road,2024-12-31 23:55:00
+S35,1,1,1,Old Toh Tuck Road,2024-12-31 23:55:00
+S36,1,1,1,Upper Serangoon Road,2023-12-02 07:50:00
+S40,1,1,1,Mandai Lake Road,2024-12-31 23:55:00
+S43,1,1,1,Kim Chuan Road,2024-12-31 23:55:00
+S44,1,1,1,Nanyang Avenue,2024-11-30 06:30:00
+S46,1,1,1,Sime Road,2020-12-04 17:10:00
+S50,1,1,1,Clementi Road,2024-12-31 23:55:00
+S55,1,1,1,Buangkok Green,2019-02-21 11:20:00
+S60,1,1,1,Sentosa,2024-12-31 23:55:00
+S61,1,1,1,Chai Chee Street,2023-03-16 07:40:00
+S63,1,1,1,International Road,2017-12-19 09:55:00
+S64,1,1,1,Bukit Panjang Road,2024-12-31 23:55:00
+S66,1,1,1,Kranji Way,2024-12-31 23:55:00
+S69,1,1,1,Upper Peirce Reservoir Park,2024-12-31 23:55:00
+S71,1,1,1,Kent Ridge Road,2024-12-31 23:55:00
+S72,1,1,1,Prince Edward Road,2017-03-07 06:29:59
+S77,1,1,1,Alexandra Road,2024-12-31 23:55:00
+S78,1,1,1,Poole Road,2024-12-31 23:55:00
+S79,1,1,1,Somerset Road,2024-12-31 23:55:00
+S81,1,1,1,Punggol Central,2024-12-31 23:55:00
+S82,1,1,1,Tuas West Road,2022-11-21 10:45:00
+S84,1,1,1,Simei Avenue,2024-12-31 23:55:00
+S88,1,1,1,Toa Payoh North,2024-12-31 23:55:00
+S89,1,1,1,Tuas Road,2024-12-31 23:55:00
+S90,1,1,1,Bukit Timah Road,2024-12-31 23:55:00
+S900,1,1,1,Seletar Aerospace View,2024-12-31 23:55:00
+S91,1,1,1,Yishun Avenue 5,2023-02-21 14:40:00
+S92,1,1,1,South Buona Vista Road,2024-12-31 23:55:00
+S94,1,1,1,Pasir Ris Street 51,2024-12-31 23:55:00
+S96,1,1,1,Tanah Merah Coast Road,2017-04-18 04:04:59
+S97,1,1,1,Pioneer Sector 2,2017-01-05 12:09:59

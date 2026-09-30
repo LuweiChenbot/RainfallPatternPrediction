@@ -1,0 +1,9 @@
+﻿source_year,rows,stations,first_time,last_time,missing_timestamp,missing_station,missing_rainfall,missing_longitude,missing_latitude,missing_date,missing_update_time,missing_reading_update_time,missing_station_name,missing_device_id,minimum_rainfall,maximum_rainfall,negative_values,nonfinite_rainfall,blank_station,blank_station_name,blank_device_id,unit_types,reading_types,missing_unit,missing_reading_type,date_mismatch,year_mismatch,update_before_observation,reading_update_before_observation,different_update_times,minimum_update_delay_seconds,median_update_delay_seconds,maximum_update_delay_seconds
+2017,5256106,62,2017-01-01 08:04:59,2017-12-31 23:55:00,0,0,0,0,0,0,0,0,0,0,0.0,18.0,0,0,0,0,0,1,1,0,0,0,0,0,0,932997,204,519,185980
+2018,4594246,56,2018-01-01 00:00:00,2018-12-31 23:55:00,0,0,0,0,0,0,0,0,0,0,0.0,15.6,0,0,0,0,0,1,1,0,0,0,0,0,0,132611,122,441,41806838
+2019,5026862,54,2019-01-01 00:00:00,2019-12-31 23:55:00,0,0,0,0,0,0,0,0,0,0,0.0,15.4,0,0,0,0,0,1,1,0,0,0,0,0,0,142151,139,461,617244
+2020,6334473,80,2020-01-01 00:00:00,2020-12-31 23:55:00,0,0,0,0,0,0,0,0,0,0,0.0,20.6,0,0,0,0,0,1,1,0,0,0,0,0,0,361589,265,603,2465681
+2021,7044646,76,2021-01-01 00:00:00,2021-12-31 23:55:00,0,0,0,0,0,0,0,0,0,0,0.0,26.4,0,0,0,0,0,1,1,0,0,0,0,0,0,371326,316,578,134289
+2022,7133230,72,2022-01-01 00:00:00,2022-12-31 23:55:00,0,0,0,0,0,0,0,0,0,0,0.0,37.2,0,0,0,0,0,1,1,0,0,0,0,0,0,136615,266,575,379337
+2023,6742890,74,2023-01-01 00:00:00,2023-12-31 23:55:00,0,0,0,0,0,0,0,0,0,0,0.0,17.622,0,0,0,0,0,1,1,0,0,0,0,0,0,150405,263,566,408897
+2024,6406260,70,2024-01-01 00:00:00,2024-12-31 23:55:00,0,0,0,0,0,0,0,0,0,0,0.0,15.912,0,0,0,0,0,1,1,0,0,0,0,0,0,294307,320,333,346272
