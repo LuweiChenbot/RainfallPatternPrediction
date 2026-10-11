@@ -8,16 +8,21 @@ K = list(range(C.N_CLASSES))
 
 
 def _counts(df, keys):
+    """groups by the keys and turns label into 9 columns (pivot), 
+    each holding the weighted count of that class. A class that never occurs in a group gets 0 (na.fill)."""
     return (df.withColumn("k", F.col("label").cast("int"))
               .groupBy(*keys).pivot("k", K).agg(F.sum("w")).na.fill(0.0))
 
 
 def _shares(counts, keys, prefix):
+    """divides each count by the row total, so the 9 numbers sum to 1."""
     total = sum(F.col(str(k)) for k in K)
     return counts.select(*keys, *[(F.col(str(k)) / total).alias(f"{prefix}{k}") for k in K])
 
 
 def _to_vector(df, prefix):
+    """packs the 9 columns into a probability Vector, the same type LR and RF output, 
+    so evaluate scores the baselines exactly like the models."""
     cols = [f"{prefix}{k}" for k in K]
     return df.withColumn("probability", array_to_vector(F.array(*cols))).drop(*cols)
 
