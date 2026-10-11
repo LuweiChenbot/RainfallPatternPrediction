@@ -1,0 +1,68 @@
+{
+  "created_at_utc": "2026-10-11T09:25:47.137924+00:00",
+  "python": "3.14.7",
+  "spark": "4.2.0",
+  "java": "17.0.18",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cpu_count": 20,
+  "master": "local[4]",
+  "driver_memory": "4g",
+  "shuffle_partitions": "32",
+  "time_zone": "Asia/Singapore",
+  "arguments": {
+    "input_dir": "..\\original data\\processed\\rainfall_aligned",
+    "output_dir": "outputs\\task1_gabriel",
+    "years": [
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "minimum_coverage": 0.9,
+    "annual_panel_coverage": 0.8,
+    "master": "local[4]",
+    "driver_memory": "4g",
+    "shuffle_partitions": 32
+  },
+  "year_counts": [
+    {
+      "year": 2017,
+      "observations": 5256020
+    },
+    {
+      "year": 2018,
+      "observations": 4594246
+    },
+    {
+      "year": 2019,
+      "observations": 5026862
+    },
+    {
+      "year": 2020,
+      "observations": 6334473
+    },
+    {
+      "year": 2021,
+      "observations": 7044646
+    },
+    {
+      "year": 2022,
+      "observations": 7133230
+    },
+    {
+      "year": 2023,
+      "observations": 6742890
+    },
+    {
+      "year": 2024,
+      "observations": 6406260
+    }
+  ],
+  "fixed_panel_station_count": 0,
+  "fixed_annual_panel_station_count": 21,
+  "interpretation": "Exposure-normalized station averages, not island-wide total rainfall. Missingness may be informative."
+}
