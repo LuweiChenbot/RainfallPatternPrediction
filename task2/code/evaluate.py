@@ -62,8 +62,18 @@ def reliability(df, edge, n_bins=10):
 
 
 def brier_at(df, theta):
-    """Weighted Brier score of P(Y > theta) at any threshold, judged on the rainfall itself (y_mm).
-    The column comes from add_exceedance (bin edges) or mapper.add_threshold (any theta)."""
+    """Weighted Brier score of P(Y > theta) at any threshold, judged on y_mm."""
     o = (F.col("y_mm") > theta).cast("double")
     r = df.agg((F.sum(F.col("w") * (F.col(exc_col(theta)) - o) ** 2) / F.sum("w")).alias("bs")).first()
     return r["bs"]
+
+
+def score(df, thresholds=(0.0, 1.0, 5.0, 20.0)):
+    """RPS, log loss, and Brier and AUC-PR at a few thresholds, as one dict."""
+    ex = add_exceedance(df)
+    brier, rps = brier_rps(ex)
+    ap = auc_pr(ex)
+    out = {"RPS": rps, "log loss": log_loss(df)}
+    out.update({f"Brier {t:g}": brier[t] for t in thresholds})
+    out.update({f"AUC-PR {t:g}": ap[t] for t in thresholds})
+    return out
