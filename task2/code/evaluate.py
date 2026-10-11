@@ -59,3 +59,11 @@ def reliability(df, edge, n_bins=10):
                    (F.sum(F.col("w") * o) / F.sum("w")).alias("observed"))
               .orderBy("bin")
               .toPandas())
+
+
+def brier_at(df, theta):
+    """Weighted Brier score of P(Y > theta) at any threshold, judged on the rainfall itself (y_mm).
+    The column comes from add_exceedance (bin edges) or mapper.add_threshold (any theta)."""
+    o = (F.col("y_mm") > theta).cast("double")
+    r = df.agg((F.sum(F.col("w") * (F.col(exc_col(theta)) - o) ** 2) / F.sum("w")).alias("bs")).first()
+    return r["bs"]
