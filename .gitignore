@@ -16,3 +16,6 @@ models/
 spark-warehouse/
 metastore_db/
 derby.log
+
+# Machine-specific settings (copy .env.example)
+.env

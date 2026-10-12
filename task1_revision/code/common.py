@@ -1,0 +1,217 @@
+"""Shared paths, plotting style and matrix helpers for the Task 1 revision.
+
+Inputs are read from the original pipeline (outputs/task1 and the matrix built
+by build_matrix.py). Everything this revision writes stays inside
+task1_revision/.
+"""
+
+import json
+import os
+from pathlib import Path
+
+os.environ.setdefault("MPLCONFIGDIR", str(Path.home() / ".cache" / "rainfall_matplotlib"))
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pyarrow.parquet as pq
+from matplotlib.patches import Polygon
+
+ROOT = Path(__file__).resolve().parents[2]
+TASK1 = ROOT / "outputs" / "task1"
+REVISION = ROOT / "task1_revision"
+MATRIX = REVISION / "data" / "matrix_5min"
+BOUNDARY = REVISION / "data" / "external" / "mp2019_region_boundary.geojson"
+FIGURES = REVISION / "outputs" / "figures"
+TABLES = REVISION / "outputs" / "tables"
+RESULTS = REVISION / "outputs" / "results.json"
+
+SLOTS_PER_DAY = 288
+LAT0, LON0 = 1.35, 103.82  # map projection centre
+RESOLUTIONS = {"5 min": 1, "15 min": 3, "1 hour": 12, "3 hours": 36, "1 day": 288}
+
+# Validated reference palette (dataviz skill): categorical slots in fixed order,
+# one-hue blue ramp for magnitude and blue/orange for wet/dry polarity.
+BLUE, ORANGE, AQUA, YELLOW, MAGENTA, GREEN, VIOLET, RED = (
+    "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948")
+CATEGORICAL = [BLUE, ORANGE, AQUA, YELLOW, MAGENTA, GREEN, VIOLET, RED]
+RAMP = ["#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#0d366b"]  # ordinal, light to dark
+SURFACE, INK, INK2, MUTED, GRID, AXIS, NEUTRAL = (
+    "#fcfcfb", "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#f0efec")
+SEQUENTIAL = matplotlib.colors.LinearSegmentedColormap.from_list(
+    "blues", ["#f4f8fd", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"])
+DIVERGING = matplotlib.colors.LinearSegmentedColormap.from_list(
+    "dry_wet", ["#b8461b", ORANGE, "#f6b89b", NEUTRAL, "#9ec5f4", BLUE, "#184f95"])
+
+
+def style():
+    plt.rcParams.update({
+        "font.family": "DejaVu Sans", "font.size": 9.5, "axes.titlesize": 11,
+        "axes.titleweight": "bold", "axes.titlelocation": "left", "axes.labelcolor": INK2,
+        "axes.edgecolor": AXIS, "axes.linewidth": 0.8, "axes.facecolor": SURFACE,
+        "figure.facecolor": SURFACE, "savefig.facecolor": SURFACE,
+        "axes.spines.top": False, "axes.spines.right": False,
+        "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.6, "grid.linestyle": "-",
+        "xtick.color": MUTED, "ytick.color": MUTED, "xtick.labelcolor": INK2, "ytick.labelcolor": INK2,
+        "legend.frameon": False, "legend.fontsize": 8.5, "lines.linewidth": 2,
+        "lines.solid_capstyle": "round", "lines.solid_joinstyle": "round",
+    })
+
+
+def save(fig, name):
+    FIGURES.mkdir(parents=True, exist_ok=True)
+    fig.savefig(FIGURES / f"{name}.png", dpi=180, bbox_inches="tight")
+    fig.savefig(FIGURES / f"{name}.svg", bbox_inches="tight")
+    plt.close(fig)
+    print(f"  figure: {name}", flush=True)
+
+
+def caption(fig, text, y=-0.02):
+    """Put the one-line takeaway under the figure, in secondary ink."""
+    fig.text(0.01, y, text, ha="left", va="top", fontsize=9, color=INK2, wrap=True)
+
+
+def write_table(frame, name):
+    TABLES.mkdir(parents=True, exist_ok=True)
+    frame.to_csv(TABLES / f"{name}.csv", index=False)
+
+
+def record(section, values):
+    """Merge headline numbers into outputs/results.json for the change log."""
+    data = json.loads(RESULTS.read_text()) if RESULTS.exists() else {}
+    data[section] = values
+    RESULTS.parent.mkdir(parents=True, exist_ok=True)
+    RESULTS.write_text(json.dumps(data, indent=2, default=float) + "\n")
+
+
+# ---------------------------------------------------------------- matrix ----
+
+def load_matrix():
+    """Return X (slots x stations, float64, NaN = no reading), stations, times."""
+    if not (MATRIX / "manifest.json").exists():
+        raise FileNotFoundError("Run build_matrix.py first.")
+    stations = pd.read_csv(MATRIX / "stations.csv")
+    ids = stations.station_id.tolist()
+    blocks = []
+    for year_dir in sorted(MATRIX.glob("source_year=*")):
+        table = pq.read_table(year_dir, columns=["slot", *ids])
+        slots = table.column("slot").to_numpy()
+        values = np.column_stack([table.column(s).to_numpy(zero_copy_only=False).astype(np.float64)
+                                  for s in ids])
+        blocks.append(values[np.argsort(slots)])
+    X = np.vstack(blocks)
+    if X.shape[0] % SLOTS_PER_DAY:
+        raise ValueError("Matrix does not contain whole days")
+    times = pd.date_range("2017-01-01 00:00", periods=X.shape[0], freq="5min")
+    return X, stations, times
+
+
+def block_sum(X, k):
+    """Sum consecutive blocks of k slots; a block with any missing slot is NaN."""
+    T, S = X.shape
+    return X[: T - T % k].reshape(-1, k, S).sum(axis=1)
+
+
+def local_xy(stations):
+    """Equirectangular east/north coordinates in km around the island centre."""
+    x = (stations.location_longitude.values - LON0) * 111.32 * np.cos(np.radians(LAT0))
+    y = (stations.location_latitude.values - LAT0) * 110.57
+    return x, y
+
+
+def distance_matrix(stations):
+    x, y = local_xy(stations)
+    return np.hypot(x[:, None] - x[None, :], y[:, None] - y[None, :])
+
+
+class LaggedCorrelation:
+    """Pearson correlation of every station pair over the slots both observed.
+
+    corr(lag)[i, j] = corr(x_i(t), x_j(t + lag)). Missing readings are excluded
+    pair by pair (never treated as zero). An optional 0/1 weight on t restricts
+    the reference time to a season.
+    """
+
+    def __init__(self, X, weight=None):
+        # float32 is exact for the 0/1 counts and ample for correlations.
+        self.M = (~np.isnan(X)).astype(np.float32)
+        self.Z = np.nan_to_num(X).astype(np.float32)
+        self.Z2 = self.Z * self.Z
+        w = np.ones(X.shape[0], np.float32) if weight is None else weight.astype(np.float32)
+        self.Mw, self.Zw, self.Z2w = self.M * w[:, None], self.Z * w[:, None], self.Z2 * w[:, None]
+        # Rows where no station has rain add nothing to the rain sums; skipping
+        # them makes the lagged products several times faster.
+        self.active = np.flatnonzero(self.Z.any(axis=1))
+
+    def at(self, lag):
+        if lag < 0:
+            corr, n = self.at(-lag)
+            return corr.T, n.T
+        T = self.Z.shape[0]
+        n = (self.Mw[: T - lag].T @ self.M[lag:]).astype(np.float64)
+        ra = self.active[self.active < T - lag]          # rain at t on the reference side
+        rb = self.active[self.active >= lag] - lag       # rain at t + lag on the lagged side
+        sx = self.Zw[ra].T @ self.M[ra + lag]
+        sxx = self.Z2w[ra].T @ self.M[ra + lag]
+        sxy = self.Zw[ra].T @ self.Z[ra + lag]
+        sy = self.Mw[rb].T @ self.Z[rb + lag]
+        syy = self.Mw[rb].T @ self.Z2[rb + lag]
+        sx, sy, sxx, syy, sxy = (s.astype(np.float64) for s in (sx, sy, sxx, syy, sxy))
+        with np.errstate(invalid="ignore", divide="ignore"):
+            cov = sxy / n - (sx / n) * (sy / n)
+            var = (sxx / n - (sx / n) ** 2) * (syy / n - (sy / n) ** 2)
+            corr = cov / np.sqrt(var)
+        return corr, n
+
+
+# --------------------------------------------------------------- mapping ----
+
+def load_regions():
+    regions = json.loads(BOUNDARY.read_text())["features"]
+    shapes = []
+    for feature in regions:
+        polygons = feature["geometry"]["coordinates"]
+        if feature["geometry"]["type"] == "Polygon":
+            polygons = [polygons]
+        rings = [np.asarray(polygon[0])[:, :2] for polygon in polygons]
+        name = feature["properties"]["REGION_N"].title().replace(" Region", "")
+        shapes.append((name, rings))
+    return shapes
+
+
+def draw_boundary(ax, labels=True, label_color=MUTED):
+    for name, rings in load_regions():
+        for ring in rings:
+            ax.add_patch(Polygon(ring, closed=True, facecolor=NEUTRAL, edgecolor=AXIS, linewidth=0.6, zorder=0))
+        if labels:
+            ring = max(rings, key=len)
+            nudge = {"North-East": (0.0, 0.035), "West": (0.0, 0.0)}.get(name, (0.0, -0.012))
+            x, y = ring[:, 0].mean() + nudge[0], ring[:, 1].mean() + nudge[1]
+            ax.text(x, y, name.upper(), ha="center", va="center", fontsize=7,
+                    color=label_color, zorder=1, fontweight="bold", alpha=0.9)
+    ax.set_xlim(103.60, 104.05)
+    ax.set_ylim(1.21, 1.48)
+    ax.set_aspect(1 / np.cos(np.radians(LAT0)))
+    ax.grid(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+
+def region_of(stations):
+    """Official URA region containing each station (nearest region if offshore)."""
+    from matplotlib.path import Path as MplPath
+    shapes = load_regions()
+    points = np.column_stack([stations.location_longitude.values, stations.location_latitude.values])
+    names = np.array([None] * len(points), dtype=object)
+    for name, rings in shapes:
+        for ring in rings:
+            inside = MplPath(ring).contains_points(points)
+            names[inside & (names == None)] = name  # noqa: E711
+    for i in np.where(names == None)[0]:  # noqa: E711
+        best = min(((np.min(np.hypot(*(ring - points[i]).T)), name) for name, rings in shapes for ring in rings))
+        names[i] = best[1]
+    return names
