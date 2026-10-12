@@ -1,0 +1,104 @@
+S107 (East Coast Parkway) gauge fault, 19-22 August 2022
+=========================================================
+
+Sources
+  Raw readings : data/HistoricalRainfallacrossSingapore2022.csv
+  Stations     : task1_revision/data/matrix_5min/stations.csv
+  Task 1 files : outputs/task1/extreme_5min_readings.csv, outputs/task1/extreme_complete_days.csv
+
+Summary
+  From about 19 Aug 23:20 to 22 Aug 03:45 the S107 gauge reported heavy rain
+  that did not fall. Neighbouring stations stayed dry the whole time. Before
+  and after this period S107 agrees with its neighbours, so the gauge is
+  normally healthy.
+
+1. Location and neighbours
+  S107 East Coast Parkway: 103.9625 E, 1.3135 N
+  Nearest stations active in August 2022 (distance from S107):
+    S207 Bedok Road          1.3 km
+    S212 Tampines Ave 9      3.0 km
+    S84  Simei Ave           3.9 km
+    S224 Airport Blvd        4.1 km
+    S208 Changi East Close   4.5 km
+    S61  Chai Chee           4.7 km
+    S113, S94, S24, S78, S215, S29, S43, S214, S221 at 6-9 km
+  S207, only 1.3 km away, is the key witness: real rain at S107 should also
+  appear there.
+
+2. Timeline: S107 vs S207 (1.3 km)
+  19 Aug  S107: showers 08:40-09:05 (3.8 mm) and 13:00-13:40 (8.6 mm)
+          S207: same two showers at the same times (10.7 and 14.3 mm)
+          -> healthy. 23:20-23:45: S107 5.4 mm while S207 is dry (first odd readings)
+  20 Aug  S107: rain almost all day, 262 mm.   S207: two single tips, 0.4 mm
+          -> faulty
+  21 Aug  S107: almost continuous 00:00-23:45, 786.6 mm.
+          S207: one real shower 03:10-04:05, 15.1 mm
+          -> faulty
+  22 Aug  S107: bursts until 03:45, about 11 mm.   S207: dry
+          -> end of the fault
+  23-24 Aug  Both stations record the same showers at the same times
+          (e.g. 24 Aug 12:00: 4.0 vs 4.4 mm; 18:35: 5.4 vs 4.8 mm)
+          -> healthy again
+
+3. Close-up: 21 Aug, 01:00-03:00
+  S107 reported rain in all 24 consecutive 5-minute slots (mm):
+    01:00-01:55  4.4  3.2  8.6 11.8  8.6  6.8 12.6 13.0  7.2 12.0 14.6 15.6  = 118.4 mm
+    02:00-02:55 11.2 14.2 13.6 10.4  8.2 14.0 13.4  9.8 10.4  9.2 13.2 13.8  = 141.4 mm
+  S207 (1.3 km): 0.0 in all 24 slots.  S212 (3 km): a single 0.2 mm tip.
+  260 mm in two hours (about 130 mm/h sustained) with zero rain 1.3 km away
+  is not physically plausible: a storm that intense covers kilometres and
+  rises and fades within about an hour.
+
+  Strongest evidence: 03:10-04:05 real rain reached the area. S207 recorded a
+  genuine 15.1 mm shower (3.0-3.6 mm per 5 min), while S107 went almost silent
+  (0.4 mm). S107 was not tracking the weather at all.
+
+4. Close-up: the record 85.6 mm label (S107, 21 Aug 19:55)
+  The label is the sum of the next six readings:
+    20:00  20:05  20:10  20:15  20:20  20:25
+     4.4 +  5.4 + 21.8 +  7.8 + 37.2 +  9.0  = 85.6 mm
+  S107 was dry until 19:55, spiked suddenly, and was dry again by 20:30.
+  S207, S212, S84, S224 and S208 (1.3-4.5 km) all read 0.0 in every slot
+  from 19:30 to 20:55.
+  37.2 mm at 20:20 is the largest single 5-minute reading anywhere in 2017-2024.
+  The 8 largest labels in the dataset (74.8-85.6 mm in 30 minutes) all come
+  from this fault, from two bursts around 01:25-01:45 and 19:50-20:05.
+
+5. Nature of the fault
+  - Not a data-pipeline problem: every reading arrived 9-10 minutes after its
+    slot, like the neighbours' readings, so it was not a delayed batch or a
+    backfill.
+  - The gauge itself recorded the bucket tips in real time. Tipping-bucket
+    gauges can register false tips from mechanical or electrical faults, or
+    from water reaching the bucket that is not rain. The data cannot tell
+    which.
+  - Odd values such as 8.60001, 9.39999 and 8.39999 appear only on the fault
+    days (normal readings are clean multiples of 0.2). Not proof by itself.
+
+6. Effects on the project
+  Labels       : the 8 largest 30-minute labels (74.8-85.6 mm) are fake. The
+                 largest genuine total is 71.8 mm (S64, Nov 2018), confirmed
+                 by neighbouring stations.
+  Mapper       : the "class 8 runs to 85.6 mm" tail comes from the broken
+                 gauge; every class-8 value above 71.8 mm is fake.
+  Tier 1       : the maxima of t1_rain_1440 (787.4 mm), t1_rain_120 (266.6 mm)
+                 and t1_max5_30 (37.2 mm) all come from these two days.
+  Tier 2       : the fault looks like "extreme rain at one station while every
+                 neighbour is dry". Left in, it teaches the model that isolated
+                 extreme rain happens with dry neighbours, weakening the
+                 neighbour signal Tier 2 is meant to learn.
+  Task 1       : in outputs/task1/extreme_5min_readings.csv the two largest
+                 5-minute readings (37.2 and 29.4 mm) and 8 of the top 11 come
+                 from this S107 fault or from S36's phantom-rain days
+                 (2020-2021). The audit's "maxima up to 37.2 mm" refers to this
+                 fault. S107's 21 Aug escaped extreme_complete_days.csv only
+                 because it had 283 of 288 readings; S36's 1 Apr 2021
+                 (319.6 mm while the island was dry) still tops that table.
+
+7. Cleaning recommendation
+  Masking whole days 20-21 Aug leaves about 16 mm of fake readings
+  (5.4 mm on the night of 19 Aug, about 11 mm early on 22 Aug).
+  Recommended mask for S107: 2022-08-19 22:00 to 2022-08-22 06:00.
+  This removes the whole fault and keeps S107's genuine showers on the
+  morning and afternoon of 19 Aug. Masking whole days 19-22 Aug also works,
+  but loses those two real showers.

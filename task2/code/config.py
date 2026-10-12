@@ -1,4 +1,6 @@
 """Here we setup configurations for task2, including the path fixing, bin labeling, evaluation thresholds, ..."""
+import os
+import sys
 from pathlib import Path
 
 # find the paths
@@ -12,6 +14,11 @@ RESULTS = ROOT / "task2" / "results"
 MATRIX = ROOT / "task1_revision" / "data" / "matrix_5min"
 STUCK = DATA / "stuck_station_months.csv"
 FEAT_T1 = DATA / "feat_t1"
+FEAT_T2 = DATA / "feat_t2"
+
+# gauge periods that reported rain that never fell: (station, start, end), local time, end excluded
+FAULTY = [("S107", "2022-08-19 22:00", "2022-08-22 06:00"),
+          ("S36", "2019-02-01 00:00", "2021-09-01 00:00")]
 
 # fix the time grid
 ORIGIN_EPOCH = 1483200000 # slot 0 = 2017-01-01 00:00 Asia/Singapore
@@ -31,15 +38,28 @@ VAL_YEAR = 2023
 TEST_YEAR = 2024
 SEED = 42
 
-def get_spark(app_name, cores, memory):
+# machine settings, read from the environment so a larger machine needs no code changes (see task2/README.md)
+SPARK_CORES = int(os.environ.get("RAIN_SPARK_CORES", "8"))
+SPARK_MEMORY = os.environ.get("RAIN_SPARK_MEMORY", "10g")
+SHUFFLE_PARTITIONS = int(os.environ.get("RAIN_SHUFFLE_PARTITIONS", "96"))
+SPARK_LOCAL_DIR = os.environ.get("RAIN_SPARK_LOCAL_DIR")
+TRAIN_NAME = os.environ.get("RAIN_TRAIN", "train_frac0.1")
+RF_TREES = int(os.environ.get("RAIN_RF_TREES", "50"))
+
+
+def get_spark(app_name, cores=None, memory=None):
     """Start (or reuse) the local Spark session with the project's settings"""
     from pyspark.sql import SparkSession
-    spark = (SparkSession.builder
-             .master(f"local[{cores}]")
-             .appName(app_name)
-             .config("spark.driver.memory", memory)
-             .config("spark.sql.session.timeZone", "Asia/Singapore")
-             .config("spark.sql.shuffle.partitions", "96")
-             .getOrCreate())
+    os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
+    os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
+    builder = (SparkSession.builder
+               .master(f"local[{cores or SPARK_CORES}]")
+               .appName(app_name)
+               .config("spark.driver.memory", memory or SPARK_MEMORY)
+               .config("spark.sql.session.timeZone", "Asia/Singapore")
+               .config("spark.sql.shuffle.partitions", str(SHUFFLE_PARTITIONS)))
+    if SPARK_LOCAL_DIR:
+        builder = builder.config("spark.local.dir", SPARK_LOCAL_DIR)
+    spark = builder.getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
     return spark

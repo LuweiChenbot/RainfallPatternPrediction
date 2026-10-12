@@ -1,0 +1,7 @@
+pyspark[ml]==4.2.0
+pyarrow==20.0.0
+numpy>=1.26,<2
+pandas>=2.2,<3
+nbclient>=0.8
+ipykernel>=6.28
+jupyterlab>=4.2
