@@ -1,0 +1,2 @@
+# Saved Spark models carry .crc checksums: keep their bytes identical on every OS
+task2/models/** -text

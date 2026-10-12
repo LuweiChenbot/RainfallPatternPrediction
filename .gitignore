@@ -11,6 +11,11 @@ outputs/
 models/
 *.parquet
 
+# Trained Task 2 models are a deliverable
+!task2/models/
+!task2/models/**/data/
+!task2/models/**/*.parquet
+
 # Local Spark files
 spark-warehouse/
 metastore_db/
