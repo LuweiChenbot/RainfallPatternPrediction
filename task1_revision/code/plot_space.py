@@ -68,7 +68,7 @@ def correlation_dynamics(X, stations):
     save(fig, "21_correlation_dynamics",
          "Correlation of rainfall between pairs of stations against their distance, for rain totals over five "
          "minutes to one day. Dots are medians per distance band; lines are fitted exponential decays "
-         "c·exp(-d / reach). The reach grows with the time window, from "
+         "c × exp(−d / reach). The reach grows with the time window, from "
          f"{fits['5 min'][1]:.0f} km for five-minute totals to {fits['1 day'][1]:.0f} km for daily totals, and "
          f"within 2 km the correlation rises from {near['5 min']:.2f} to {near['1 day']:.2f}: individual storms are "
          "local, while rainy days are island-wide.",
@@ -176,7 +176,7 @@ def station_map(stations, wetness, region, stats, evidence):
     spread = max(abs(data.relative - 1).max(), 0.05)
     norm = TwoSlopeNorm(1, 1 - spread, 1 + spread)
 
-    fig, ax = plt.subplots(figsize=(TEXT_WIDTH, 3.5), layout="constrained")
+    fig, ax = plt.subplots(figsize=(TEXT_WIDTH, 4.1), layout="constrained")
     draw_boundary(ax)
     points = None
     for name, marker in SHAPES.items():
@@ -189,11 +189,11 @@ def station_map(stations, wetness, region, stats, evidence):
     loose = data[data.region.isna() & data.relative.notna()]
     ax.scatter(loose.location_longitude, loose.location_latitude, c=loose.relative, cmap=DIVERGING, norm=norm,
                marker="D", s=16, edgecolors=INK2, linewidths=0.4, zorder=3)
-    for _, row in pd.concat([data.nlargest(1, "relative"), data.nsmallest(1, "relative")]).iterrows():
-        right_edge = row.location_longitude > 103.95
+    wettest, driest = data.loc[data.relative.idxmax()], data.loc[data.relative.idxmin()]
+    for row in (wettest, driest):
         ax.annotate(f"{row.station_name} ({row.relative:.2f})", (row.location_longitude, row.location_latitude),
-                    xytext=(-6 if right_edge else 6, -9), textcoords="offset points", fontsize=6, color=INK2,
-                    ha="right" if right_edge else "left", zorder=4)
+                    xytext=(0, -6), textcoords="offset points", ha="center", va="top", fontsize=6, color=INK2,
+                    zorder=4)
     sizes = data.region.value_counts()
     handles = [Line2D([], [], marker=m, linestyle="none", markersize=4.5, markerfacecolor=NEUTRAL,
                       markeredgecolor=INK2, markeredgewidth=0.4, label=f"{name} ({sizes.get(name, 0)} stations)")
@@ -203,24 +203,25 @@ def station_map(stations, wetness, region, stats, evidence):
     if len(loose):
         handles.append(Line2D([], [], marker="D", linestyle="none", markersize=3.5, markerfacecolor=NEUTRAL,
                               markeredgecolor=INK2, markeredgewidth=0.4, label="Not clustered"))
-    ax.legend(handles=handles, loc="lower left", fontsize=6.5, title="Rainfall region from clustering (shape)", title_fontsize=6.5,
-              alignment="left")
+    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=len(handles), fontsize=6.5,
+              title="Rainfall region from clustering (shape)", title_fontsize=6.5, columnspacing=1.2)
     bar = fig.colorbar(points, ax=ax, fraction=0.03, pad=0.01, shrink=0.85)
     bar.set_label("Rainfall relative to the network (1 = average)")
     bar.outline.set_visible(False)
 
     by_region = data.dropna(subset=["relative", "region"]).groupby("region").relative.mean()
-    wettest, driest = data.loc[data.relative.idxmax()], data.loc[data.relative.idxmin()]
+    unshown = int((data.region.isna() & data.relative.isna()).sum())
     split = evidence[evidence.p < 0.05].band.tolist()
     save(fig, "20_station_map",
          "Where it rains more, and which stations rain together. Colour: each station's rainfall rate relative to "
          "the whole network in the same months (station-months with at least 90% coverage, stations with at least "
          f"12 such months; 1 = network average), from {wettest.relative:.2f} at {wettest.station_name} to "
          f"{driest.relative:.2f} at {driest.station_name}. Shape: rainfall regions found by Ward clustering of "
-         f"1 - hourly correlation ({stats['core_stations']} stations with long overlapping records, "
-         f"{stats['assigned']} short-record stations assigned to the closest cluster). Mean relative wetness is "
-         f"{by_region.get('West', np.nan):.2f} in the West region, {by_region.get('Central', np.nan):.2f} in the "
-         f"Central and {by_region.get('East', np.nan):.2f} in the East. Clusters built on odd years agree with "
+         f"one minus the hourly correlation ({stats['core_stations']} stations with long overlapping records, "
+         f"{stats['assigned']} short-record stations assigned to the closest cluster); stations with too short a "
+         f"record for either measure ({unshown}) are not shown. Mean relative wetness is "
+         f"{by_region.get('West', np.nan):.2f} in the West cluster, {by_region.get('Central', np.nan):.2f} in the "
+         f"Central cluster and {by_region.get('East', np.nan):.2f} in the East cluster. Clusters built on odd years agree with "
          f"those built on even years (adjusted Rand index {stats['ari_odd_vs_even']:.2f}) and, in the held-out "
          f"years, pairs in the same cluster correlate more than equally distant pairs in different clusters at "
          f"{' and '.join(split)} (one-sided Mann-Whitney p < 0.05) but not further apart, so the regions are real "
@@ -258,6 +259,10 @@ def storm_motion(lc, pairs, dx, dy, lags):
 def compass(degrees):
     names = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
     return names[int((degrees + 11.25) // 22.5) % 16]
+
+
+def compass_words(degrees):
+    return "-".join({"N": "north", "E": "east", "S": "south", "W": "west"}[c] for c in compass(degrees))
 
 
 def lead_lag(X, stations, times):
@@ -333,10 +338,10 @@ def lead_lag(X, stations, times):
          "travel time, and a plane fit of travel time against the pairs' displacement gives the storm velocity. "
          "(a) Direction and speed of storm motion per season (thick arrows) and per single year (thin arrows, "
          "fainter for weaker fits). (b)-(d) Travel time against distance along the fitted direction; the line's slope "
-         f"is the inverse speed. In the southwest monsoon storms cross the island towards the {compass(sw_fit['heading'])} "
-         f"at about {sw_fit['speed']:.0f} km/h (R² = {sw_fit['r2']:.2f}), and the {len(sw)} years with a clear fit "
-         f"(R² ≥ 0.3) all point between {sw.heading.min():.0f}° and {sw.heading.max():.0f}°; the other seasons are "
-         "less organised.",
+         f"is the inverse speed. In the southwest monsoon storms cross the island towards the "
+         f"{compass_words(sw_fit['heading'])} at about {sw_fit['speed']:.0f} km/h (R² = {sw_fit['r2']:.2f}); in "
+         f"{len(sw)} of the 8 years the fit is clear (R² ≥ 0.3), and all of these point between "
+         f"{sw.heading.min():.0f}° and {sw.heading.max():.0f}°. The other seasons are less organised.",
          task2=f"In the southwest monsoon a station 15 km upstream sees the rain about {15 / sw_fit['speed'] * 60:.0f} "
                "minutes earlier, so recent rain at upstream (western) stations is a forecast feature.")
     write_table(yearly.round(3), "storm_motion_by_year")
