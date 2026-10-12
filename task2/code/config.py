@@ -9,6 +9,9 @@ ASSEMBLED = DATA / "assembled"
 STATION_STATIC = DATA / "station_static.csv"
 MODELS = ROOT / "task2" / "models"
 RESULTS = ROOT / "task2" / "results"
+MATRIX = ROOT / "task1_revision" / "data" / "matrix_5min"
+STUCK = DATA / "stuck_station_months.csv"
+FEAT_T1 = DATA / "feat_t1"
 
 # fix the time grid
 ORIGIN_EPOCH = 1483200000 # slot 0 = 2017-01-01 00:00 Asia/Singapore
