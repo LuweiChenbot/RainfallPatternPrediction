@@ -1,30 +1,30 @@
 """Section 2: where does it rain, and how do neighbouring stations relate?
 
-20_station_map            relative wetness of each station on the Singapore map
+20_station_map            relative wetness of each station (colour) and its data-derived rainfall region (shape)
 21_correlation_dynamics   idea 1: neighbour correlation vs distance at 5 min ... 1 day
-22_rainfall_regions       clustering stations on hourly co-variation, checked on held-out years
 23_lead_lag               storm motion: which station gets the rain first, by monsoon season
 """
 
 import numpy as np
 import pandas as pd
-from matplotlib.lines import Line2D
 from matplotlib.colors import TwoSlopeNorm
+from matplotlib.lines import Line2D
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.optimize import curve_fit
 from scipy.spatial.distance import squareform
 from scipy.stats import mannwhitneyu
 from sklearn.metrics import adjusted_rand_score
 
-from common import (AQUA, AXIS, BLUE, DIVERGING, INK, INK2, MUTED, ORANGE, RAMP, RESOLUTIONS,
-                    SURFACE, TASK1, LaggedCorrelation, block_sum, caption, distance_matrix, draw_boundary,
-                    load_matrix, local_xy, plt, record, region_of, save, style, write_table)
+from common import (AQUA, AXIS, BLUE, DIVERGING, INK, INK2, MUTED, NEUTRAL, ORANGE, RAMP, RESOLUTIONS, SURFACE,
+                    TEXT_WIDTH, LaggedCorrelation, block_sum, distance_matrix, draw_boundary, load_matrix, local_xy,
+                    network_monthly, plt, record, region_of, save, station_periods, style, write_table)
 
 SEASONS = {"NE monsoon (Dec-Mar)": [12, 1, 2, 3], "SW monsoon (Jun-Sep)": [6, 7, 8, 9],
            "Inter-monsoon (Apr-May, Oct-Nov)": [4, 5, 10, 11]}
 SEASON_COLORS = [BLUE, ORANGE, AQUA]
 MIN_SHARED = {1: 105_120, 3: 35_040, 12: 8_760, 36: 2_920, 288: 365}  # about one year of shared data
 BINS = np.array([0, 2, 4, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50])
+SHAPES = {"West": "o", "Central": "s", "East": "^"}
 
 
 def exp_decay(d, c0, length):
@@ -35,53 +35,12 @@ def upper(matrix):
     return matrix[np.triu_indices(matrix.shape[0], 1)]
 
 
-# ------------------------------------------------------------ 20 ----------
-
-def station_map(stations):
-    month = pd.read_csv(TASK1 / "station_month.csv")
-    network = pd.read_csv(TASK1 / "monthly_pattern.csv")[["year", "month", "mean_daily_equivalent_mm"]]
-    month = month[month.coverage >= 0.9].merge(network.rename(columns={"mean_daily_equivalent_mm": "network"}),
-                                                on=["year", "month"])
-    # Ratio to the network in the same month removes the effect of which years a station was active.
-    month["ratio"] = month.mean_daily_equivalent_mm / month.network
-    index = month.groupby("station_id").agg(relative=("ratio", "mean"), months=("ratio", "size")).reset_index()
-    data = stations.merge(index, on="station_id")
-    data = data[data.months >= 12].copy()
-    data["region"] = region_of(data)
-
-    fig, ax = plt.subplots(figsize=(11, 6.4))
-    draw_boundary(ax)
-    spread = max(abs(data.relative - 1).max(), 0.05)
-    points = ax.scatter(data.location_longitude, data.location_latitude, c=data.relative, s=70, cmap=DIVERGING,
-                        norm=TwoSlopeNorm(1, 1 - spread, 1 + spread), edgecolors=SURFACE, linewidths=1.5, zorder=3)
-    for _, row in pd.concat([data.nlargest(1, "relative"), data.nsmallest(1, "relative")]).iterrows():
-        right_edge = row.location_longitude > 103.95
-        ax.annotate(f"{row.station_name} ({row.relative:.2f})", (row.location_longitude, row.location_latitude),
-                    xytext=(-8 if right_edge else 8, -12), textcoords="offset points", fontsize=7.5, color=INK2,
-                    ha="right" if right_edge else "left", zorder=4)
-    bar = fig.colorbar(points, ax=ax, fraction=0.03, pad=0.01)
-    bar.set_label("Rainfall relative to all stations in the same months (1 = network average)")
-    bar.outline.set_visible(False)
-    by_region = data.groupby("region").relative.agg(["mean", "size"]).sort_values("mean")
-    ax.set_title("Where it rains more: the west and centre are wetter, the east coast drier")
-    summary = ", ".join(f"{r} {v['mean']:.2f}" for r, v in by_region.iloc[::-1].iterrows())
-    caption(fig, f"Mean relative wetness by official region: {summary}. Each station is compared with the whole network in "
-                 f"the same months (>= 90% coverage, >= 12 months; {len(data)} stations), so stations active in a dry year "
-                 "such as 2019 are not penalised. Station elevation is not in the dataset and was not used.", y=0.04)
-    save(fig, "20_station_map")
-    write_table(data[["station_id", "station_name", "location_longitude", "location_latitude", "region", "relative",
-                      "months"]].round(4), "station_relative_wetness")
-    record("20_map", {"region_mean_relative": by_region["mean"].round(3).to_dict(),
-                      "wettest": data.nlargest(3, "relative")[["station_name", "relative"]].round(3).values.tolist(),
-                      "driest": data.nsmallest(3, "relative")[["station_name", "relative"]].round(3).values.tolist()})
-
-
 # ------------------------------------------------------------ 21 ----------
 
 def correlation_dynamics(X, stations):
     D = distance_matrix(stations)
     d_all = upper(D)
-    curves, fits, hit = {}, {}, {}
+    curves, fits = {}, {}
     hourly = None
     for (name, k), color in zip(RESOLUTIONS.items(), RAMP):
         Y = block_sum(X, k)
@@ -91,76 +50,37 @@ def correlation_dynamics(X, stations):
         (c0, length), _ = curve_fit(exp_decay, d, r, p0=(0.8, 10), maxfev=10000)
         which = np.digitize(d, BINS) - 1
         table = pd.DataFrame({"bin": which, "d": d, "r": r}).groupby("bin").agg(
-            distance=("d", "median"), median=("r", "median"), q25=("r", lambda v: v.quantile(.25)),
-            q75=("r", lambda v: v.quantile(.75)), pairs=("r", "size"))
-        curves[name], fits[name] = table, (c0, length, color, k)
+            distance=("d", "median"), median=("r", "median"), pairs=("r", "size"))
+        curves[name], fits[name] = table, (c0, length, color)
         if k == 12:
             hourly = (corr, n)
-        if k in (12, 288):
-            wet = np.where(np.isnan(Y), np.nan, (Y >= (1.0 if k == 288 else 0.2) - 1e-9).astype(float))
-            W, M = np.nan_to_num(wet).astype(np.float32), (~np.isnan(wet)).astype(np.float32)
-            with np.errstate(invalid="ignore", divide="ignore"):
-                conditional = (W.T @ W) / (W.T @ M)  # P(j wet | i wet), both observed
-            observed = M.sum(0) > 0
-            base = np.mean(W.sum(0)[observed] / M.sum(0)[observed])
-            okc = ok & np.isfinite(upper(conditional))
-            both = np.concatenate([upper(conditional)[okc], upper(conditional.T)[okc]])
-            dist2 = np.concatenate([d_all[okc], d_all[okc]])
-            which2 = np.digitize(dist2, BINS) - 1
-            hit[name] = (pd.DataFrame({"bin": which2, "d": dist2, "p": both}).groupby("bin").agg(
-                distance=("d", "median"), median=("p", "median")), base)
 
-    fig, (ax, len_ax, hit_ax) = plt.subplots(1, 3, figsize=(15.5, 4.9), gridspec_kw={"width_ratios": [1.5, 1, 1.2],
-                                                                                     "wspace": 0.3})
+    fig, ax = plt.subplots(figsize=(4.2, 2.8), layout="constrained")
     grid = np.linspace(0, 50, 200)
     for name, table in curves.items():
-        c0, length, color, _ = fits[name]
-        ax.plot(grid, exp_decay(grid, c0, length), color=color, linewidth=1.6)
-        ax.plot(table.distance, table["median"], "o", color=color, markersize=5, markeredgecolor=SURFACE,
-                markeredgewidth=1.2, label=f"{name}: reach {length:.0f} km")
+        c0, length, color = fits[name]
+        ax.plot(grid, exp_decay(grid, c0, length), color=color, linewidth=0.9)
+        ax.plot(table.distance, table["median"], "o", color=color, markeredgecolor=SURFACE, markeredgewidth=0.6,
+                label=f"{name}: reach {length:.0f} km")
     ax.set(xlabel="Distance between the two stations (km)", ylabel="Correlation of rainfall", ylim=(0, 1), xlim=(0, 50))
-    ax.set_title("Neighbours agree, and agree more over longer windows")
-    ax.legend(loc="upper right", fontsize=7.5, title="Dots: median per distance band\nLines: c·exp(-d / reach)",
-              title_fontsize=7.5)
-
-    minutes = [5 * k for *_, k in fits.values()]
-    lengths = [fits[n][1] for n in fits]
-    len_ax.plot(minutes, lengths, color=BLUE, marker="o", markersize=6, markeredgecolor=SURFACE, markeredgewidth=1.5)
-    for name, m, L in zip(fits, minutes, lengths):
-        len_ax.annotate(f"{L:.0f} km", (m, L), xytext=(0, 7), textcoords="offset points", ha="center", fontsize=8,
-                        color=INK2)
-    len_ax.set_xscale("log")
-    len_ax.set(xticks=minutes, xticklabels=["5 min", "15 min", "1 h", "3 h", "1 day"], xlabel="Time window summed",
-               ylabel="Correlation reach (km)", ylim=(0, max(lengths) * 1.25))
-    len_ax.minorticks_off()
-    len_ax.set_title("Reach of rain grows with time scale")
-
-    for (name, (table, base)), color in zip(hit.items(), [RAMP[2], RAMP[4]]):
-        label = "hour >= 0.2 mm" if name == "1 hour" else "day >= 1 mm"
-        hit_ax.plot(table.distance, table["median"], color=color, marker="o", markersize=5, markeredgecolor=SURFACE,
-                    label=f"P(neighbour wet | station wet), {label}")
-        hit_ax.axhline(base, color=color, linewidth=0.9, alpha=0.6)
-        hit_ax.text(49, base + 0.012, f"chance level {base:.0%}", ha="right", fontsize=7.5, color=INK2)
-    hit_ax.set(xlabel="Distance between the two stations (km)", ylabel="Probability", ylim=(0, 1), xlim=(0, 50))
-    hit_ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
-    hit_ax.set_title("If one station is wet, is its neighbour?")
-    hit_ax.legend(loc="upper right", fontsize=7.2)
-    caption(fig, f"Within 2 km, five-minute rainfall correlates at {curves['5 min']['median'].iloc[0]:.2f} and daily totals at "
-                 f"{curves['1 day']['median'].iloc[0]:.2f}. The distance over which correlation falls by a factor e grows from "
-                 f"{fits['5 min'][1]:.0f} km (5 min) to {fits['1 day'][1]:.0f} km (1 day): storms are local, rainy days are "
-                 "island-wide. For Task 2: neighbour rainfall is a strong feature (and a way to fill gaps), and the useful "
-                 "neighbourhood radius should grow with the forecast window.", y=0.0)
-    save(fig, "21_correlation_dynamics")
+    ax.legend(loc="upper right", fontsize=6.5)
+    near = {n: curves[n]["median"].iloc[0] for n in curves}
+    save(fig, "21_correlation_dynamics",
+         "Correlation of rainfall between pairs of stations against their distance, for rain totals over five "
+         "minutes to one day. Dots are medians per distance band; lines are fitted exponential decays "
+         "c·exp(-d / reach). The reach grows with the time window, from "
+         f"{fits['5 min'][1]:.0f} km for five-minute totals to {fits['1 day'][1]:.0f} km for daily totals, and "
+         f"within 2 km the correlation rises from {near['5 min']:.2f} to {near['1 day']:.2f}: individual storms are "
+         "local, while rainy days are island-wide.",
+         task2="Rain at neighbouring stations is a strong feature; the useful radius grows with the forecast window.")
     rows = [dict(resolution=n, c0=fits[n][0], reach_km=fits[n][1]) for n in fits]
     write_table(pd.DataFrame(rows).round(4), "correlation_reach")
     record("21_correlation", {"reach_km": {n: round(fits[n][1], 1) for n in fits},
-                              "median_r_within_2km": {n: round(float(curves[n]["median"].iloc[0]), 3) for n in curves},
-                              "hit_rate_nearest_band": {n: round(float(t["median"].iloc[0]), 3) for n, (t, _) in hit.items()},
-                              "chance_level": {n: round(float(b), 3) for n, (_, b) in hit.items()}})
+                              "median_r_within_2km": {n: round(float(v), 3) for n, v in near.items()}})
     return hourly
 
 
-# ------------------------------------------------------------ 22 ----------
+# ------------------------------------------------------------ regions -----
 
 def core_stations(n, min_shared):
     keep = np.ones(n.shape[0], bool)
@@ -186,20 +106,23 @@ def name_by_longitude(labels, x):
 
 
 def rainfall_regions(X, stations, hourly, times):
+    """Ward clusters on hourly co-variation, short-record stations assigned, checked on held-out years."""
     corr, n = hourly
-    x, y = local_xy(stations)
+    x, _ = local_xy(stations)
     D = distance_matrix(stations)
     core = core_stations(n, MIN_SHARED[12])
     labels = name_by_longitude(ward_clusters(corr, core, 3), x[core])
-    assigned = {}
+    region = pd.Series(None, index=stations.index, dtype=object)
+    region.iloc[core] = labels
+    assigned = []
     for s in np.setdiff1d(np.arange(len(stations)), core):
         shared = n[s, core] >= MIN_SHARED[12]
         if shared.sum() >= 5:
             scores = {c: np.nanmean(corr[s, core][shared & (labels == c)]) for c in np.unique(labels)
                       if np.any(shared & (labels == c))}
-            assigned[s] = max(scores, key=scores.get)
+            region.iloc[s] = max(scores, key=scores.get)
+            assigned.append(s)
 
-    # Held-out check: clusters from odd years, judged on even-year correlations.
     hours = times[::12]
     Y = block_sum(X, 12)
     halves = {}
@@ -211,68 +134,104 @@ def rainfall_regions(X, stations, hourly, times):
     c_even, n_even = halves[0]
     both = np.intersect1d(core_stations(n_odd, MIN_SHARED[12] // 2), core_stations(n_even, MIN_SHARED[12] // 2))
     lab_odd = ward_clusters(c_odd, both, 3)
-    lab_even = ward_clusters(c_even, both, 3)
-    stability = adjusted_rand_score(lab_odd, lab_even)
+    stability = adjusted_rand_score(lab_odd, ward_clusters(c_even, both, 3))
     same = lab_odd[:, None] == lab_odd[None, :]
     d_b, r_b, s_b = upper(D[np.ix_(both, both)]), upper(c_even[np.ix_(both, both)]), upper(same)
-    bands = [(3, 8), (8, 13), (13, 20)]
     evidence = []
-    for lo, hi in bands:
+    for lo, hi in [(3, 8), (8, 13), (13, 20)]:
         sel = (d_b >= lo) & (d_b < hi) & np.isfinite(r_b)
         within, across = r_b[sel & s_b], r_b[sel & ~s_b]
         p = mannwhitneyu(within, across, alternative="greater").pvalue if len(within) and len(across) else np.nan
         evidence.append(dict(band=f"{lo}-{hi} km", within=np.median(within), across=np.median(across),
                              n_within=len(within), n_across=len(across), p=p))
     evidence = pd.DataFrame(evidence)
-    official = region_of(stations.iloc[core])
-    ari_official = adjusted_rand_score(official, labels)
+    ari_official = adjusted_rand_score(region_of(stations.iloc[core]), labels)
 
-    fig, (ax, ev_ax) = plt.subplots(1, 2, figsize=(14.5, 5.6), gridspec_kw={"width_ratios": [1.7, 1], "wspace": 0.12})
-    draw_boundary(ax, label_color=AXIS)
-    colors = dict(zip(["West", "Central", "East"], [BLUE, ORANGE, AQUA]))
-    for name, color in colors.items():
-        pick = core[labels == name]
-        ax.scatter(stations.location_longitude.values[pick], stations.location_latitude.values[pick], s=70,
-                   color=color, edgecolors=SURFACE, linewidths=1.5, zorder=3, label=f"{name} ({len(pick)} stations)")
-        extra = [s for s, c in assigned.items() if c == name]
-        ax.scatter(stations.location_longitude.values[extra], stations.location_latitude.values[extra], s=55,
-                   facecolors=SURFACE, edgecolors=color, linewidths=1.8, zorder=3)
-    ax.scatter([], [], s=55, facecolors=SURFACE, edgecolors=MUTED, linewidths=1.8,
-               label="Short record: assigned to the closest cluster")
-    ax.legend(loc="lower left", fontsize=8, title="Clusters from hourly co-variation", title_fontsize=8)
-    ax.set_title("Rainfall regions found from the data alone")
-
-    pos = np.arange(len(evidence))
-    ev_ax.plot(evidence.across, pos, "o", color=MUTED, markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5,
-               label="Different clusters", zorder=3)
-    ev_ax.plot(evidence.within, pos, "o", color=BLUE, markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5,
-               label="Same cluster", zorder=4)
-    for i, row in evidence.iterrows():
-        ev_ax.plot([row.across, row.within], [i, i], color=AXIS, linewidth=1.5, zorder=0)
-        ev_ax.annotate(f"p={row.p:.1g}", (max(row.within, row.across), i), xytext=(8, -3), textcoords="offset points",
-                       fontsize=7.5, color=INK2)
-    ev_ax.set(yticks=pos, yticklabels=[f"pairs {b} apart" for b in evidence.band], ylim=(len(evidence) - 0.4, -0.6),
-              xlabel="Median hourly correlation in held-out (even) years")
-    ev_ax.set_title("Same distance, same cluster: more alike?", fontsize=10)
-    ev_ax.legend(loc="lower right", fontsize=7.5)
-    split = evidence[evidence.p < 0.05].band.tolist()
-    caption(fig, f"Ward clustering on 1 - hourly correlation ({len(core)} stations with long overlapping records; k = 3). Built on odd "
-                 f"years only, the clusters still separate equally distant pairs in the even years at {', '.join(split)} "
-                 "(right), but not further apart, so the regions are real yet soft. Odd- and even-year clusterings agree "
-                 f"(adjusted Rand index {stability:.2f}); agreement with the five official URA regions is ARI {ari_official:.2f}. "
-                 "For Task 2: a cluster label or cluster-mean rainfall is a compact spatial feature.", y=0.03)
-    save(fig, "22_rainfall_regions")
     table = stations[["station_id", "station_name"]].copy()
-    table["cluster"] = None
-    table.loc[core, "cluster"] = labels
-    for s, c in assigned.items():
-        table.loc[s, "cluster"] = c + " (assigned)"
+    table["cluster"] = region.values
+    table.loc[assigned, "cluster"] = table.loc[assigned, "cluster"] + " (assigned)"
     write_table(table, "station_clusters")
     write_table(evidence.round(4), "cluster_heldout_evidence")
-    record("22_regions", {"core_stations": int(len(core)), "assigned": int(len(assigned)),
-                          "sizes": pd.Series(labels).value_counts().to_dict(), "ari_odd_vs_even": round(stability, 3),
-                          "ari_vs_official_regions": round(ari_official, 3),
-                          "heldout_evidence": evidence.round(4).to_dict("records")})
+    stats = {"core_stations": int(len(core)), "assigned": int(len(assigned)),
+             "sizes": pd.Series(labels).value_counts().to_dict(), "ari_odd_vs_even": round(stability, 3),
+             "ari_vs_official_regions": round(ari_official, 3), "heldout_evidence": evidence.round(4).to_dict("records")}
+    record("22_regions", stats)
+    return region, stats, evidence
+
+
+# ------------------------------------------------------------ 20 ----------
+
+def relative_wetness(X, stations, times):
+    """Each station's rate divided by the network rate of the same month, averaged over its good months."""
+    months = station_periods(X, stations, times, "month")
+    months = months[months.coverage >= 0.9].merge(network_monthly(X, stations, times).rename(columns={"rate": "network"}),
+                                                  on=["year", "month"])
+    months["ratio"] = months.rate / months.network
+    index = months.groupby("station_id").agg(relative=("ratio", "mean"), months=("ratio", "size")).reset_index()
+    return index[index.months >= 12]
+
+
+def station_map(stations, wetness, region, stats, evidence):
+    data = stations.assign(region=region.values).merge(wetness, on="station_id", how="left")
+    spread = max(abs(data.relative - 1).max(), 0.05)
+    norm = TwoSlopeNorm(1, 1 - spread, 1 + spread)
+
+    fig, ax = plt.subplots(figsize=(TEXT_WIDTH, 3.5), layout="constrained")
+    draw_boundary(ax)
+    points = None
+    for name, marker in SHAPES.items():
+        sub = data[(data.region == name) & data.relative.notna()]
+        points = ax.scatter(sub.location_longitude, sub.location_latitude, c=sub.relative, cmap=DIVERGING, norm=norm,
+                            marker=marker, s=26, edgecolors=INK2, linewidths=0.4, zorder=3)
+        empty = data[(data.region == name) & data.relative.isna()]
+        ax.scatter(empty.location_longitude, empty.location_latitude, marker=marker, s=26, facecolors=SURFACE,
+                   edgecolors=MUTED, linewidths=0.6, zorder=3)
+    loose = data[data.region.isna() & data.relative.notna()]
+    ax.scatter(loose.location_longitude, loose.location_latitude, c=loose.relative, cmap=DIVERGING, norm=norm,
+               marker="D", s=16, edgecolors=INK2, linewidths=0.4, zorder=3)
+    for _, row in pd.concat([data.nlargest(1, "relative"), data.nsmallest(1, "relative")]).iterrows():
+        right_edge = row.location_longitude > 103.95
+        ax.annotate(f"{row.station_name} ({row.relative:.2f})", (row.location_longitude, row.location_latitude),
+                    xytext=(-6 if right_edge else 6, -9), textcoords="offset points", fontsize=6, color=INK2,
+                    ha="right" if right_edge else "left", zorder=4)
+    sizes = data.region.value_counts()
+    handles = [Line2D([], [], marker=m, linestyle="none", markersize=4.5, markerfacecolor=NEUTRAL,
+                      markeredgecolor=INK2, markeredgewidth=0.4, label=f"{name} ({sizes.get(name, 0)} stations)")
+               for name, m in SHAPES.items()]
+    handles.append(Line2D([], [], marker="o", linestyle="none", markersize=4.5, markerfacecolor=SURFACE,
+                          markeredgecolor=MUTED, markeredgewidth=0.6, label="Hollow: fewer than 12 good months"))
+    if len(loose):
+        handles.append(Line2D([], [], marker="D", linestyle="none", markersize=3.5, markerfacecolor=NEUTRAL,
+                              markeredgecolor=INK2, markeredgewidth=0.4, label="Not clustered"))
+    ax.legend(handles=handles, loc="lower left", fontsize=6.5, title="Rainfall region from clustering (shape)", title_fontsize=6.5,
+              alignment="left")
+    bar = fig.colorbar(points, ax=ax, fraction=0.03, pad=0.01, shrink=0.85)
+    bar.set_label("Rainfall relative to the network (1 = average)")
+    bar.outline.set_visible(False)
+
+    by_region = data.dropna(subset=["relative", "region"]).groupby("region").relative.mean()
+    wettest, driest = data.loc[data.relative.idxmax()], data.loc[data.relative.idxmin()]
+    split = evidence[evidence.p < 0.05].band.tolist()
+    save(fig, "20_station_map",
+         "Where it rains more, and which stations rain together. Colour: each station's rainfall rate relative to "
+         "the whole network in the same months (station-months with at least 90% coverage, stations with at least "
+         f"12 such months; 1 = network average), from {wettest.relative:.2f} at {wettest.station_name} to "
+         f"{driest.relative:.2f} at {driest.station_name}. Shape: rainfall regions found by Ward clustering of "
+         f"1 - hourly correlation ({stats['core_stations']} stations with long overlapping records, "
+         f"{stats['assigned']} short-record stations assigned to the closest cluster). Mean relative wetness is "
+         f"{by_region.get('West', np.nan):.2f} in the West region, {by_region.get('Central', np.nan):.2f} in the "
+         f"Central and {by_region.get('East', np.nan):.2f} in the East. Clusters built on odd years agree with "
+         f"those built on even years (adjusted Rand index {stats['ari_odd_vs_even']:.2f}) and, in the held-out "
+         f"years, pairs in the same cluster correlate more than equally distant pairs in different clusters at "
+         f"{' and '.join(split)} (one-sided Mann-Whitney p < 0.05) but not further apart, so the regions are real "
+         f"but soft; agreement with the five official URA planning regions (grey outlines and labels) is "
+         f"{stats['ari_vs_official_regions']:.2f}. Station elevation is not in the dataset.",
+         task2="Station position, a wetness ratio or a region label are compact station features.")
+    write_table(data[["station_id", "station_name", "location_longitude", "location_latitude", "region", "relative",
+                      "months"]].round(4), "station_relative_wetness")
+    record("20_map", {"region_mean_relative": by_region.round(3).to_dict(),
+                      "wettest": data.nlargest(3, "relative")[["station_name", "relative"]].round(3).values.tolist(),
+                      "driest": data.nsmallest(3, "relative")[["station_name", "relative"]].round(3).values.tolist()})
 
 
 # ------------------------------------------------------------ 23 ----------
@@ -327,57 +286,59 @@ def lead_lag(X, stations, times):
         print(f"  {season}: towards {results[season]['heading']:.0f} deg at {results[season]['speed']:.0f} km/h", flush=True)
     yearly = pd.DataFrame(yearly)
 
-    fig = plt.figure(figsize=(18, 5.6))
-    layout = fig.add_gridspec(1, 4, width_ratios=[1.3, 1, 1, 1], wspace=0.38)
-    ax = fig.add_subplot(layout[0], projection="polar")
+    fig = plt.figure(figsize=(TEXT_WIDTH, 5.6), layout="constrained")
+    layout = fig.add_gridspec(2, 2)
+    ax = fig.add_subplot(layout[0, 0], projection="polar")
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
     cap = 80
     for (season, fit), color in zip(results.items(), SEASON_COLORS):
         for _, row in yearly[yearly.season == season].iterrows():
             ax.annotate("", (np.radians(row.heading), min(row.speed, cap)), (0, 0), annotation_clip=False,
-                        arrowprops=dict(arrowstyle="-|>", color=color, linewidth=1,
-                                        alpha=float(np.clip(row.r2, 0.05, 0.7))))
+                        arrowprops=dict(arrowstyle="-|>,head_width=0.15,head_length=0.3", color=color,
+                                        linewidth=0.6, alpha=float(np.clip(row.r2, 0.05, 0.7))))
         ax.annotate("", (np.radians(fit["heading"]), fit["speed"]), (0, 0), annotation_clip=False, zorder=5,
-                    arrowprops=dict(arrowstyle="-|>,head_width=0.45,head_length=0.9", color=color, linewidth=3.2))
+                    arrowprops=dict(arrowstyle="-|>,head_width=0.3,head_length=0.6", color=color, linewidth=1.8))
     ax.set_rlim(0, cap)
     ax.set_rticks([20, 40, 60, 80])
-    ax.set_yticklabels(["20", "40", "60", "80 km/h"], fontsize=7, color=INK2)
+    ax.set_yticklabels(["20", "40", "60", "80 km/h"], fontsize=6, color=INK2)
     ax.set_rlabel_position(200)
-    ax.set_xticks(np.radians(range(0, 360, 45)), ["N", "NE", "E", "SE", "S", "SW", "W", "NW"])
-    ax.grid(color=AXIS, linewidth=0.6)
+    ax.set_xticks(np.radians(range(0, 360, 45)), ["N", "NE", "E", "SE", "S", "SW", "W", "NW"], fontsize=6.5)
+    ax.grid(color=AXIS, linewidth=0.4)
     ax.spines["polar"].set_color(AXIS)
-    ax.set_title("Direction storms move towards", pad=18)
-    handles = [Line2D([], [], color=c, linewidth=3,
-                      label=f"{s.split(' (')[0]}: to {compass(f['heading'])}, {f['speed']:.0f} km/h, R²={f['r2']:.2f}")
+    ax.spines["polar"].set_linewidth(0.6)
+    ax.set_title("(a) Direction storms move towards", pad=10)
+    handles = [Line2D([], [], color=c, linewidth=1.8,
+                      label=f"{s.split(' (')[0]}: to {compass(f['heading'])}, {f['speed']:.0f} km/h, R² = {f['r2']:.2f}")
                for (s, f), c in zip(results.items(), SEASON_COLORS)]
-    handles.append(Line2D([], [], color=MUTED, linewidth=1, alpha=0.6,
-                          label="Thin arrows: single years (fainter = weaker fit)"))
-    ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(-0.05, -0.06), fontsize=7.6, frameon=False)
-    fig.suptitle("Storms cross the island from the west, most consistently in the southwest monsoon",
-                 x=0.06, ha="left", fontweight="bold", fontsize=12, y=1.04)
+    handles.append(Line2D([], [], color=MUTED, linewidth=0.6, alpha=0.6, label="Thin: single years (fainter = weaker fit)"))
+    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.08), fontsize=6.3, frameon=False)
 
     for i, ((season, fit), color) in enumerate(zip(results.items(), SEASON_COLORS)):
-        sub = fig.add_subplot(layout[i + 1])
-        sub.scatter(fit["along"], fit["lag"], s=5, color=color, alpha=0.18, linewidths=0)
+        sub = fig.add_subplot(layout[(i + 1) // 2, (i + 1) % 2])
+        sub.scatter(fit["along"], fit["lag"], s=1.5, color=color, alpha=0.2, linewidths=0)
         span = np.linspace(fit["along"].min(), fit["along"].max(), 10)
-        sub.plot(span, span / fit["speed"] * 60, color=INK, linewidth=1.5, label=f"{fit['speed']:.0f} km/h")
-        sub.axhline(0, color=AXIS, linewidth=0.8)
-        sub.axvline(0, color=AXIS, linewidth=0.8)
-        sub.set(xlabel="Distance along the storm direction (km)", ylim=(-62, 62))
-        if i == 0:
-            sub.set_ylabel("Delay of best correlation (min)")
-        sub.set_title(season, fontsize=10)
-        sub.legend(loc="upper left", fontsize=7.5)
+        sub.plot(span, span / fit["speed"] * 60, color=INK, linewidth=0.9, label=f"{fit['speed']:.0f} km/h")
+        sub.axhline(0, color=AXIS, linewidth=0.6)
+        sub.axvline(0, color=AXIS, linewidth=0.6)
+        sub.set(xlabel="Distance along the storm direction (km)", ylabel="Delay of best correlation (min)",
+                ylim=(-62, 62))
+        sub.set_title(f"({'bcd'[i]}) {season}")
+        sub.legend(loc="upper left", fontsize=6.5)
     sw = yearly[(yearly.season == "SW monsoon (Jun-Sep)") & (yearly.r2 >= 0.3)]
-    caption(fig, "For every station pair 5-30 km apart, the five-minute series are shifted against each other by up to "
-                 "+/-60 minutes; the shift with the highest correlation is the travel time, and a plane fit of travel time "
-                 f"against displacement gives the storm velocity. Southwest-monsoon years with a clear fit (R² >= 0.3, "
-                 f"{len(sw)} of 8) all point between {sw.heading.min():.0f}° and {sw.heading.max():.0f}°; the other seasons "
-                 "are less organised. For Task 2: in the southwest monsoon a station 15 km upstream sees the rain about "
-                 f"{15 / results['SW monsoon (Jun-Sep)']['speed'] * 60:.0f} minutes earlier, so lagged upstream rainfall is a "
-                 "forecast feature.", y=-0.04)
-    save(fig, "23_lead_lag")
+    sw_fit = results["SW monsoon (Jun-Sep)"]
+    save(fig, "23_lead_lag",
+         "Storm motion by monsoon season. For every station pair 5-30 km apart, the five-minute series are shifted "
+         "against each other by up to 60 minutes either way; the shift with the highest correlation is taken as the "
+         "travel time, and a plane fit of travel time against the pairs' displacement gives the storm velocity. "
+         "(a) Direction and speed of storm motion per season (thick arrows) and per single year (thin arrows, "
+         "fainter for weaker fits). (b)-(d) Travel time against distance along the fitted direction; the line's slope "
+         f"is the inverse speed. In the southwest monsoon storms cross the island towards the {compass(sw_fit['heading'])} "
+         f"at about {sw_fit['speed']:.0f} km/h (R² = {sw_fit['r2']:.2f}), and the {len(sw)} years with a clear fit "
+         f"(R² ≥ 0.3) all point between {sw.heading.min():.0f}° and {sw.heading.max():.0f}°; the other seasons are "
+         "less organised.",
+         task2=f"In the southwest monsoon a station 15 km upstream sees the rain about {15 / sw_fit['speed'] * 60:.0f} "
+               "minutes earlier, so recent rain at upstream (western) stations is a forecast feature.")
     write_table(yearly.round(3), "storm_motion_by_year")
     record("23_lead_lag", {s: {"heading_deg": round(f["heading"], 1), "towards": compass(f["heading"]),
                                "speed_kmh": round(f["speed"], 1), "r2": round(f["r2"], 3), "pairs": f["pairs"]}
@@ -389,7 +350,7 @@ def lead_lag(X, stations, times):
 if __name__ == "__main__":
     style()
     X, stations, times = load_matrix()
-    station_map(stations)
     hourly = correlation_dynamics(X, stations)
-    rainfall_regions(X, stations, hourly, times)
+    region, stats, evidence = rainfall_regions(X, stations, hourly, times)
+    station_map(stations, relative_wetness(X, stations, times), region, stats, evidence)
     lead_lag(X, stations, times)
