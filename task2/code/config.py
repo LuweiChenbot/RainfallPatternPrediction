@@ -2,6 +2,7 @@
 import os
 import sys
 from pathlib import Path
+import tempfile
 
 # find the paths
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,8 +45,8 @@ SPARK_MEMORY = os.environ.get("RAIN_SPARK_MEMORY", "10g")
 SHUFFLE_PARTITIONS = int(os.environ.get("RAIN_SHUFFLE_PARTITIONS", "96"))
 SPARK_LOCAL_DIR = os.environ.get("RAIN_SPARK_LOCAL_DIR")
 TRAIN_NAME = os.environ.get("RAIN_TRAIN", "train_frac0.1")
-RF_TREES = int(os.environ.get("RAIN_RF_TREES", "50"))
-
+RF_TREES = int(os.environ.get("RAIN_RF_TREES", "150"))
+RF_MEMORY_MB = int(os.environ.get("RAIN_RF_MEMORY_MB", "2048"))
 
 def get_spark(app_name, cores=None, memory=None):
     """Start (or reuse) the local Spark session with the project's settings"""
@@ -62,4 +63,5 @@ def get_spark(app_name, cores=None, memory=None):
         builder = builder.config("spark.local.dir", SPARK_LOCAL_DIR)
     spark = builder.getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
+    spark.sparkContext.setCheckpointDir((Path(SPARK_LOCAL_DIR or tempfile.gettempdir()) / "rain-checkpoints").as_posix())
     return spark

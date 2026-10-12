@@ -32,10 +32,12 @@ def build_lr(features, reg_param=1e-4, elastic_net=0.0, max_iter=100):
     return Pipeline(stages=stages)
 
 
-def build_rf(features, num_trees=50, max_depth=10, min_instances=100, subsampling=0.5):
+def build_rf(features, num_trees=150, max_depth=10, min_instances=100, subsampling=0.5, feature_subset="sqrt",
+             max_bins=64, impurity="gini"):
     """Random forest on the raw features."""
     return Pipeline(stages=[
         VectorAssembler(inputCols=features, outputCol="features"),
         RandomForestClassifier(weightCol="w", numTrees=num_trees, maxDepth=max_depth,
                                minInstancesPerNode=min_instances, subsamplingRate=subsampling,
-                               featureSubsetStrategy="sqrt", maxBins=64, cacheNodeIds=True, seed=C.SEED)])
+                               featureSubsetStrategy=feature_subset, maxBins=max_bins, impurity=impurity,
+                               maxMemoryInMB=C.RF_MEMORY_MB, cacheNodeIds=True, seed=C.SEED)])
