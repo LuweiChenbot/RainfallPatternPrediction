@@ -21,8 +21,8 @@ Code:
 | Constant | nothing | 9 class shares | counting | training table, with row weights |
 | Climatology | station, month, hour | one 9-class distribution per station × month × hour, shrunk towards the island-wide month × hour | counting and shrinkage; shrinkage strength chosen on 2023 | every labelled row of 2017–2022 |
 | Persistence | class of the last 30 minutes' rain | a 10 × 9 transition table | counting | every labelled row of 2017–2022 |
-| Logistic regression | the 41 features, transformed | 9 × (D + 1) coefficients | weighted maximum likelihood with an L2 penalty; penalty chosen on 2023 | training table (`RAIN_TRAIN`) |
-| Random forest | the 41 raw features | B decision trees with a class distribution in every leaf | greedy splits on bootstrap samples; settings chosen on 2023 | training table (`RAIN_TRAIN`) |
+| Logistic regression | all features, transformed | 9 × (D + 1) coefficients | weighted maximum likelihood with an L2 penalty; penalty chosen on 2023 | training table (`RAIN_TRAIN`) |
+| Random forest | all features, raw | B decision trees with a class distribution in every leaf | greedy splits on bootstrap samples; settings chosen on 2023 | training table (`RAIN_TRAIN`) |
 
 ## Notation
 
@@ -162,7 +162,7 @@ This is the transition matrix of a first-order Markov chain on 30-minute rain cl
 3. Optionally (`nonlinear=True`), add the main features cut into one-hot bands, and the hour × season products.
 4. Divide every column by its standard deviation in the training table (no centring).
 
-This gives $D = 42$ inputs without the non-linear additions and $D = 137$ with them.
+With Tiers 0 to 2 this gives $D = 42$ inputs without the non-linear additions and $D = 137$ with them; Tier 3 adds 17 more.
 
 **Model.** The softmax form:
 
@@ -204,13 +204,13 @@ $$
 
 ## 5. Random forest
 
-**Inputs.** The 41 features as they are, with no transformations. A tree only compares a feature with thresholds, so a log or a rescaling changes nothing. `t0_season` enters as its code 0, 1 or 2.
+**Inputs.** All features as they are (41 with Tiers 0 to 2, 58 with Tier 3), with no transformations. A tree only compares a feature with thresholds, so a log or a rescaling changes nothing. `t0_season` enters as its code 0, 1 or 2.
 
 **One tree.** A classification tree, grown as follows:
 
 - **Data.** A bootstrap sample of the training table, Spark's default. Each row enters tree $b$ a random number of times $c_{ib} \sim \text{Poisson}(\rho)$, with $\rho = 0.5$ (`subsampling`). That means about 39% of rows, some repeated. In tree $b$, row $i$ counts with weight $w_i c_{ib}$.
 - **Candidate thresholds.** For each feature, up to `maxBins − 1` thresholds at approximate quantiles of the training values.
-- **Splits.** At each node, draw a random subset of the features: `sqrt` gives 7, `onethird` 14, `0.5` 21 of the 41. Among those, choose the feature $d$ and threshold $\tau$ that most reduce the weighted impurity:
+- **Splits.** At each node, draw a random subset of the features: of 41, `sqrt` gives 7, `onethird` 14 and `0.5` 21 (of 58: 8, 20 and 29). Among those, choose the feature $d$ and threshold $\tau$ that most reduce the weighted impurity:
 
 $$
 \Delta = I(\text{node}) - \frac{W_L}{W}\, I(\text{left}) - \frac{W_R}{W}\, I(\text{right}),

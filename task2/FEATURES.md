@@ -1,8 +1,8 @@
 # Task 2 features: definitions
 
-How the label and each of the 41 model features are computed, written as formulas. Every quantity is computed from information available at the prediction time $t$ or earlier. The only exceptions are the two station wetness ratios: they use labels, but only from the training years.
+How the label and each model feature are computed, written as formulas: 41 features in Tiers 0 to 2, plus 17 in Tier 3. Every quantity is computed from information available at the prediction time $t$ or earlier. The only exceptions are the two station wetness ratios: they use labels, but only from the training years.
 
-Code: `task2/code/features.py` (time, Tier 1, Tier 2), `task2/notebooks/01_labels.ipynb` (cleaning, label), `task2/notebooks/02_station_feature.ipynb` (station features), `task2/notebooks/03_train_valid_test_split.ipynb` (joining and weights).
+Code: `task2/code/features.py` (time, Tier 1, Tier 2, Tier 3), `task2/notebooks/01_labels.ipynb` (cleaning, label), `task2/notebooks/02_station_feature.ipynb` (station features), `task2/notebooks/08_tier3_features.ipynb` (Tier 3), `task2/notebooks/03_train_valid_test_split.ipynb` (joining and weights).
 
 ## Notation and data sources
 
@@ -315,6 +315,66 @@ This tells the model how many stations the 5 km and 10 km averages above are bas
 
 All Tier 2 values are rounded to 4 decimals.
 
+## Tier 3: how the neighbourhood is changing, and rain upstream (17 features)
+
+Code: `add_tier3`, `upstream_kernels`, `season_of` in `features.py`, run in `notebooks/08_tier3_features.ipynb`. The settings are in `config.py`: `LAG_SLOTS`, `STORM_MOTION`, `UPSTREAM_MINUTES`, `UP_SIGMA_KM`, `UP_RADIUS_KM`.
+
+### `t3_d15_*`: change of a Tier 2 summary over the last 15 minutes (12 features)
+
+Write $F_{s}\big(R^{15}_{\cdot,t}, R^{30}_{\cdot,t}, a_{\cdot,t}\big)$ for a Tier 2 summary of station $s$, computed from every station's readings at slot $t$. The change feature recomputes the same summary from the readings $\ell = 3$ slots (15 minutes) earlier and takes the difference:
+
+$$
+\texttt{t3\_d15\_}F_{s,t} = F_{s}\big(R^{15}_{\cdot,t}, R^{30}_{\cdot,t}, a_{\cdot,t}\big) - F_{s}\big(R^{15}_{\cdot,t-\ell}, R^{30}_{\cdot,t-\ell}, a_{\cdot,t-\ell}\big),
+$$
+
+for $F \in \{$`idw_rain_30`, `far_rain_30`, `max_rain_30`, `wet_frac_5km`, `wet_frac_10km`, `dist_rain_km`, `rain_30_n`, `rain_30_e`, `rain_30_s`, `rain_30_w`, `island_wet_frac`, `island_rain_30`$\}$.
+
+- **Station $s$ need not have reported 15 minutes ago.** The earlier value depends only on the other stations' readings at $t - \ell$. A neighbour missing at $t - \ell$ simply drops out of that earlier summary.
+- **Reading the sign:** positive means more rain, or more wet stations, than 15 minutes ago. For `dist_rain_km`, negative means the nearest rain has come closer.
+- `t2_idw_rain_15`, `t2_idw_trend` and `t2_nbrs_10km` get no change feature: the first two already describe a trend, and the third is a station count.
+
+### `t3_up15_rain`, `t3_up15_wet`, `t3_up30_rain`, `t3_up30_wet`: rain where the storm is coming from
+
+Task 1 (Figure 23) measured, for each season $\sigma$ (coded as `t0_season`), the direction $\phi_\sigma$ that storms move towards (degrees from north, clockwise) and their speed $v_\sigma$:
+
+| Season | Code | $\phi_\sigma$ | $v_\sigma$ |
+|---|---|---|---|
+| NE monsoon (Dec–Mar) | 0 | 136.4° | 51.4 km/h |
+| Inter-monsoon | 1 | 118.2° | 59.1 km/h |
+| SW monsoon (Jun–Sep) | 2 | 79.3° | 37.9 km/h |
+
+Following the motion backwards from station $s$ for $\tau$ minutes gives the point that rain reaching $s$ after $\tau$ minutes is over now:
+
+$$
+\mathbf{u}_{s}(\tau) = (x_s, y_s) - v_\sigma \frac{\tau}{60}\,(\sin\phi_\sigma, \cos\phi_\sigma), \qquad \tau \in \{15, 30\},
+$$
+
+where $\sigma$ is the season of $t$. For example, in the southwest monsoon the 15-minute point is 9.5 km west of the station, and the 30-minute point 19 km west. Stations near that point get Gaussian weights:
+
+$$
+k_{sj}(\tau) = \exp\!\Big(-\frac{\lVert (x_j, y_j) - \mathbf{u}_s(\tau)\rVert^2}{2\cdot 4^2}\Big)\;\mathbb{1}\big[\lVert (x_j, y_j) - \mathbf{u}_s(\tau)\rVert \le 10\big]\;\mathbb{1}[j \ne s],
+$$
+
+and the features are weighted means over the reporting stations, with the same $\operatorname{mean}_w$ as in Tier 2:
+
+$$
+\texttt{t3\_up}\tau\texttt{\_rain} = \operatorname{mean}_{k(\tau)}\big(R^{15}\big), \qquad
+\texttt{t3\_up}\tau\texttt{\_wet} = \operatorname{mean}_{k(\tau)}\big(\mathbb{1}[R^{15} > 0]\big).
+$$
+
+- **Why $R^{15}$:** the upstream features use the last 15 minutes of rain, the most current picture of where the rain is now.
+- **The weights:** $\sigma = 4$ km is roughly the spacing of the stations, and the 10 km cut-off ignores stations whose weight would be below 5%.
+
+### `t3_up30_nbrs`: how many stations are near the 30-minute upstream point
+
+$$
+\texttt{t3\_up30\_nbrs}_{s,t} = \sum_j \mathbb{1}[k_{sj}(30) > 0]\; a_{j,t} .
+$$
+
+For stations near the western and southern coasts, the 30-minute point often lies over the sea or in Johor, where there are no gauges. There the two `up30` features are 0 because nothing is measured, not because it is dry, and this count tells the model which case it is.
+
+All Tier 3 values are rounded to 4 decimals.
+
 ## Model-specific transformations
 
 The features above are what the random forest sees. The logistic regression (`code/models.py`, `build_lr`) first transforms them:
@@ -324,7 +384,8 @@ $$
 \tilde z = \operatorname{sign}(z)\,\log(1 + |z|) \quad \text{for the two trend features},
 $$
 
-- The log is applied to the features whose names start with `t1_rain`, `t1_max5`, `t1_min_since`, `t2_idw_rain`, `t2_far_rain`, `t2_max_rain`, `t2_rain_30` and `t2_island_rain`.
+- The log is applied to the features whose names start with `t1_rain`, `t1_max5`, `t1_min_since`, `t2_idw_rain`, `t2_far_rain`, `t2_max_rain`, `t2_rain_30`, `t2_island_rain`, `t3_up15_rain` and `t3_up30_rain`.
+- The signed log is applied to the two trend features and to the Tier 3 changes in rain amounts (`t3_d15_idw_rain_30`, `t3_d15_far_rain_30`, `t3_d15_max_rain_30`, `t3_d15_rain_30_*`, `t3_d15_island_rain_30`); changes in shares and in distance stay linear.
 - `t0_season` becomes two one-hot columns (the third season is the baseline).
 - Every column is divided by its training standard deviation. That standard deviation is estimated on the training table only.
 

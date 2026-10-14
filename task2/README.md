@@ -3,7 +3,7 @@
 Given a station, a prediction time and a threshold θ, the models estimate P(rainfall in the next 30 minutes > θ). Labels are the 30-minute totals binned into 9 classes; logistic regression and a random forest predict the class probabilities, and a threshold mapper turns them into P(Y > θ) for any θ.
 
 - `code/`: shared modules (`config`, `features`, `evaluate`, `mapper`, `baselines`, `models`)
-- `notebooks/`: the pipeline, run in the order 01, 02, 05, 06, 03, 04, 07
+- `notebooks/`: the pipeline, run in the order 01, 02, 05, 06, 08, 03, 04, 07
 - `run_pipeline.py`: runs the notebooks in that order and saves their outputs
 - Generated, not in git: `data/` (Parquet tables, about 4 to 6 GB), `models/` (trained models and `mapper.json`)
 - `results/`: score tables (CSV)
@@ -60,7 +60,7 @@ Selected notebooks (they still run in pipeline order):
 python task2/run_pipeline.py 03 04 07
 ```
 
-On Windows write `task2\run_pipeline.py`. The notebooks can also be run by hand, top to bottom, in the order 01, 02, 05, 06, 03, 04, 07.
+On Windows write `task2\run_pipeline.py`. The notebooks can also be run by hand, top to bottom, in the order 01, 02, 05, 06, 08, 03, 04, 07.
 
 On a 16 GB, 8-core laptop with `train_frac0.1`, notebooks 01 to 06 take about 20 minutes together and notebook 07 (training and tuning) about an hour.
 

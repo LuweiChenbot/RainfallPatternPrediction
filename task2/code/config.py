@@ -16,6 +16,7 @@ MATRIX = ROOT / "task1_revision" / "data" / "matrix_5min"
 STUCK = DATA / "stuck_station_months.csv"
 FEAT_T1 = DATA / "feat_t1"
 FEAT_T2 = DATA / "feat_t2"
+FEAT_T3 = DATA / "feat_t3"
 
 # gauge periods that reported rain that never fell: (station, start, end), local time, end excluded
 FAULTY = [("S107", "2022-08-19 22:00", "2022-08-22 06:00"),
@@ -33,6 +34,14 @@ N_CLASSES = len(BIN_EDGES) + 1
 # Evaluation
 EVAL_THRESHOLDS = BIN_EDGES
 EXTRA_THRESHOLDS = [3.0, 15.0, 30.0]
+
+# Tier 3: neighbour summaries LAG_SLOTS slots earlier, and rain upstream along the storm motion of each
+# t0_season (0 NE monsoon, 1 inter-monsoon, 2 SW monsoon), from Task 1 Figure 23: (heading towards, degrees; km/h)
+LAG_SLOTS = 3
+STORM_MOTION = {0: (136.4, 51.4), 1: (118.2, 59.1), 2: (79.3, 37.9)}
+UPSTREAM_MINUTES = (15, 30)
+UP_SIGMA_KM = 4.0
+UP_RADIUS_KM = 10.0
 
 TRAIN_YEARS = (2017, 2022)
 VAL_YEAR = 2023

@@ -1,12 +1,13 @@
 """Spark ML pipelines for the 9-class rainfall forecast."""
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import LogisticRegression, RandomForestClassifier
-from pyspark.ml.feature import OneHotEncoder, SQLTransformer, StandardScaler, VectorAssembler
 from pyspark.ml.feature import Bucketizer, Interaction, OneHotEncoder, SQLTransformer, StandardScaler, VectorAssembler
 import config as C
 
-SKEWED = ("t1_rain", "t1_max5", "t1_min_since", "t2_idw_rain", "t2_far_rain", "t2_max_rain", "t2_rain_30", "t2_island_rain")
-SIGNED = ("t1_trend", "t2_idw_trend")
+SKEWED = ("t1_rain", "t1_max5", "t1_min_since", "t2_idw_rain", "t2_far_rain", "t2_max_rain", "t2_rain_30", "t2_island_rain",
+          "t3_up15_rain", "t3_up30_rain")
+SIGNED = ("t1_trend", "t2_idw_trend", "t3_d15_idw_rain", "t3_d15_far_rain", "t3_d15_max_rain", "t3_d15_rain_30",
+          "t3_d15_island_rain")
 
 INF = float("inf")
 BIN_SPLITS = {**{c: C.BUCKET_SPLITS for c in ("t1_rain_5", "t1_rain_15", "t1_rain_30", "t1_max5_30",

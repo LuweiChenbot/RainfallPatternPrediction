@@ -16,8 +16,9 @@ from nbclient import NotebookClient
 
 TASK2 = Path(__file__).resolve().parent
 NOTEBOOKS = TASK2 / "notebooks"
-ORDER = ["01", "02", "05", "06", "03", "04", "07"]
+ORDER = ["01", "02", "05", "06", "08", "03", "04", "07", "09", "10"]
 NOISE = ("WARN", "log4j", "setLogLevel", "Stage ")
+IGNORED = "ERROR Inbox: Ignoring error"  # Spark's own heartbeat hiccups, e.g. after the laptop slept
 
 
 def load_env(path):
@@ -38,7 +39,8 @@ def tidy(nb):
             if out.get("name") == "stderr":
                 lines = out["text"].replace("\r", "\n").splitlines(True)
                 out["text"] = "".join(l for l in lines if l.strip() and not any(k in l for k in NOISE))
-        cell.outputs = [o for o in cell.outputs if o.get("name") != "stderr" or o["text"].strip()]
+        cell.outputs = [o for o in cell.outputs
+                        if o.get("name") != "stderr" or (o["text"].strip() and IGNORED not in o["text"])]
 
 
 def run(number):
