@@ -1,0 +1,2 @@
+reg_param,nonlinear,val RPS,iterations,fit min
+1e-06,True,0.09218204311600092,655,12.9
