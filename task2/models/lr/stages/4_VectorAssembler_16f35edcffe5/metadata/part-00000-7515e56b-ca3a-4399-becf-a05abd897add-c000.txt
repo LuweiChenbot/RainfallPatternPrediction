@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.VectorAssembler","timestamp":1791948420165,"sparkVersion":"4.2.0","uid":"VectorAssembler_16f35edcffe5","paramMap":{"inputCols":["t0_hod_s1","t0_hod_c1","t0_hod_s2","t0_hod_c2","t0_hod_s3","t0_hod_c3"],"outputCol":"hod_vec"},"defaultParamMap":{"handleInvalid":"error","outputCol":"VectorAssembler_16f35edcffe5__output"}}

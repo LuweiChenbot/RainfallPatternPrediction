@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.Interaction","timestamp":1791948420225,"sparkVersion":"4.2.0","uid":"Interaction_ca139b543744","paramMap":{"inputCols":["season_onehot","hod_vec"],"outputCol":"hod_x_season"},"defaultParamMap":{"outputCol":"Interaction_ca139b543744__output"}}
