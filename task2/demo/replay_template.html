@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singapore rain forecasts 2024</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --field: #ffffff; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.12);
+  --land: #ebeae5; --land-edge: #d3d2ca; --missing: #f0efec;
+  --rf: #2a78d6; --pers: #898781; --rain: #eb6834; --wash: rgba(137, 135, 129, 0.18);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --field: #0d0d0d; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.12);
+    --land: #262624; --land-edge: #3a3a37; --missing: #2c2c2a;
+    --rf: #3987e5; --pers: #898781; --rain: #d95926; --wash: rgba(195, 194, 183, 0.14);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --field: #0d0d0d; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.12);
+  --land: #262624; --land-edge: #3a3a37; --missing: #2c2c2a;
+  --rf: #3987e5; --pers: #898781; --rain: #d95926; --wash: rgba(195, 194, 183, 0.14);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+       font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+h2 { font-size: 15px; font-weight: 600; margin: 0; }
+h3 { font-size: 12px; font-weight: 600; color: var(--ink-2); margin: 16px 0 4px; }
+p { margin: 0; }
+code { font-size: 12.5px; white-space: nowrap; }
+.lede { color: var(--ink-2); max-width: 80ch; margin-bottom: 18px; }
+.muted { color: var(--ink-2); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+.card + .card, .layout + .card, .story + .layout { margin-top: 16px; }
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: center; margin-bottom: 6px; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.fields { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.label { font-size: 12px; color: var(--ink-2); }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+input, select, button { font: inherit; color: var(--ink); }
+input[type="date"], input[type="time"], input[type="number"], select {
+  background: var(--field); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; min-height: 34px; }
+select { max-width: 100%; }
+#theta { width: 84px; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--rf); outline-offset: 2px; }
+input[aria-invalid="true"] { border-color: var(--ink); border-style: dashed; }
+button { cursor: pointer; }
+button:disabled, fieldset:disabled button { cursor: default; opacity: 0.5; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 11px; }
+.pill[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.btn { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 5px 10px; min-height: 32px; }
+.btn.play { min-width: 64px; }
+.scrub { margin-top: 14px; flex-wrap: nowrap; }
+.scrub input[type="range"] { flex: 1 1 auto; min-width: 0; accent-color: var(--ink); }
+.scrub output { font-variant-numeric: tabular-nums; min-width: 42px; }
+.examples { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.note { color: var(--ink-2); margin-top: 10px; min-height: 0; }
+.note:empty { display: none; }
+.story { color: var(--ink-2); margin-top: 12px; max-width: 90ch; }
+.story:empty { display: none; }
+.story strong { color: var(--ink); font-weight: 600; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px; align-items: stretch; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.answer .when { color: var(--ink-2); margin-top: 2px; }
+.big { font-size: 48px; font-weight: 600; line-height: 1.05; margin-top: 12px; font-variant-numeric: tabular-nums; }
+.big-label { color: var(--ink-2); }
+.models { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 4px; }
+.models li { display: flex; align-items: center; gap: 8px; color: var(--ink-2); }
+.models li strong { margin-left: auto; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.models li.on { color: var(--ink); }
+.models li.on strong { font-weight: 700; }
+.observed { margin-top: 12px; }
+.past { margin-top: 4px; color: var(--ink-2); }
+.dist { font-size: 13px; }
+.dist th, .dist td { padding: 3px 6px; }
+.dist td.barcell { width: 45%; }
+.dist .bar-track { height: 6px; border-radius: 3px; background: var(--grid); }
+.dist .bar-fill { height: 6px; border-radius: 3px; background: var(--rf); }
+.dist tr.on td { font-weight: 700; color: var(--ink); }
+.dist td { color: var(--ink-2); }
+.key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; flex: none; }
+.key.rf { background: var(--rf); } .key.pers { background: var(--pers); }
+.key.dash { background: none; border-top: 2px dashed var(--ink-2); height: 0; }
+.swatch { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: var(--wash); flex: none; }
+.swatch.rain { background: var(--rain); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 4px 10px; font-size: 13px; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+#map { width: 100%; height: auto; display: block; }
+.land { fill: var(--land); stroke: var(--land-edge); stroke-width: 0.8; }
+.st { cursor: pointer; }
+.st .hit { fill: transparent; }
+.st .dot { stroke: var(--surface); stroke-width: 2; }
+.st .dot.none { fill: var(--missing); stroke: var(--muted); stroke-width: 1; }
+.st .outcome { fill: none; stroke: var(--ink); stroke-width: 2; }
+.st:focus { outline: none; }
+.st:focus-visible .hit { stroke: var(--ink); stroke-width: 1.5; }
+.sel-label { font-size: 13px; font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--surface);
+             stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin-top: 10px; font-size: 12px; color: var(--ink-2); }
+.ramp { display: flex; flex-direction: column; gap: 3px; }
+.ramp-bar { width: 180px; height: 10px; border-radius: 3px; }
+.ramp-ticks { display: flex; justify-content: space-between; width: 180px; font-variant-numeric: tabular-nums; }
+.key-item { display: flex; align-items: center; gap: 6px; }
+.chart { width: 100%; }
+.chart svg { display: block; }
+.tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.grid { stroke: var(--grid); stroke-width: 1; }
+.axis { stroke: var(--axis); stroke-width: 1; }
+.wash { fill: var(--wash); }
+.line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.line.rf { stroke: var(--rf); } .line.pers { stroke: var(--pers); }
+.bar { fill: var(--rain); }
+.threshold { stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.cursor { stroke: var(--ink); stroke-width: 1; }
+.hover { stroke: var(--muted); stroke-width: 1; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+#cal { width: 100%; height: auto; display: block; margin-top: 10px; }
+.day { cursor: pointer; }
+.day.empty { fill: none; stroke: var(--grid); stroke-width: 1; }
+.day.dry { fill: var(--missing); }
+.day.on { stroke: var(--ink); stroke-width: 2; }
+.cal-label { font-size: 11px; fill: var(--muted); }
+.cell-key { display: inline-block; width: 12px; height: 12px; border-radius: 2px; flex: none; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+.tile { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.tile .name { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 26px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tile .sub { color: var(--ink-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+details summary { cursor: pointer; font-weight: 600; }
+.table-wrap { overflow-x: auto; margin-top: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 5px 8px; border-bottom: 1px solid var(--grid); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+th { font-weight: 600; color: var(--ink-2); }
+th:first-child, td:first-child { text-align: left; }
+footer { margin-top: 20px; color: var(--ink-2); font-size: 13px; max-width: 92ch; }
+footer p + p { margin-top: 8px; }
+footer strong { color: var(--ink); }
+.tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink);
+       border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); max-width: 300px; }
+.tip .t-head { color: var(--ink-2); margin-bottom: 4px; }
+.tip .t-row { display: flex; align-items: center; gap: 8px; }
+.tip .t-row strong { margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Rain in the next 30 minutes: Singapore, 2024</h1>
+    <p class="lede">For every rain gauge and every five minutes of 2024, the chance that more than a chosen amount of
+      rain falls there in the next 30 minutes, as forecast by the final random forest from the readings up to that
+      moment, next to the rain that actually fell. 2024 is the test year: the model never saw it while being trained or
+      tuned. Choose a station, a time and a threshold, or start from an example.</p>
+  </header>
+
+  <section class="card" aria-label="Forecast query">
+    <fieldset id="query" disabled>
+      <div class="fields">
+        <div class="field"><label class="label" for="station">Station</label><select id="station"></select></div>
+        <div class="field"><label class="label" for="date">Date in 2024</label>
+          <input type="date" id="date" min="2024-01-01" max="2024-12-31" required></div>
+        <div class="field"><label class="label" for="time">Time (Singapore)</label>
+          <input type="time" id="time" step="300" required></div>
+        <div class="field"><label class="label" for="theta">More than (mm in 30 minutes)</label>
+          <div class="row"><input type="number" id="theta" min="0" step="0.1" inputmode="decimal">
+            <div class="pills" id="presets" role="group" aria-label="Common thresholds"></div></div></div>
+      </div>
+      <div class="row scrub">
+        <button class="btn" id="prev" type="button" aria-label="Five minutes earlier">&lsaquo;</button>
+        <input type="range" id="slider" min="0" max="287" step="1" aria-label="Time of day">
+        <button class="btn" id="next" type="button" aria-label="Five minutes later">&rsaquo;</button>
+        <output id="sliderOut" for="slider"></output>
+        <button class="btn play" id="play" type="button">Play</button>
+      </div>
+      <div class="examples"><span class="label" id="exLabel">Examples</span>
+        <div class="pills" id="examples" role="group" aria-labelledby="exLabel"></div></div>
+    </fieldset>
+    <p class="note" id="note" role="status"></p>
+  </section>
+  <p class="story" id="story"></p>
+
+  <div class="layout">
+    <section class="card answer">
+      <h2 id="stName">&nbsp;</h2>
+      <p class="when" id="when"></p>
+      <div aria-live="polite">
+        <div class="big" id="bigP">…</div>
+        <div class="big-label" id="bigLabel">Unpacking the 2024 forecasts…</div>
+      </div>
+      <ul class="models" id="modelList"></ul>
+      <p class="observed" id="observed"></p>
+      <p class="past" id="past"></p>
+      <h3>The whole forecast: chance of more than each amount</h3>
+      <table class="dist" id="dist"></table>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2 id="mapTitle">&nbsp;</h2>
+        <div class="seg" id="mapModel" role="group" aria-label="Colour the map by"></div>
+      </div>
+      <p class="muted" id="mapNote"></p>
+      <svg id="map" role="group" aria-label="Map of rain gauges coloured by forecast chance"></svg>
+      <div class="legend">
+        <div class="ramp"><div class="ramp-bar" id="rampBar"></div>
+          <div class="ramp-ticks"><span>0%</span><span>50%</span><span>100%</span></div></div>
+        <div class="key-item"><svg width="22" height="22" aria-hidden="true">
+          <circle cx="11" cy="11" r="5" fill="var(--muted)"></circle>
+          <circle cx="11" cy="11" r="8.5" fill="none" stroke="var(--ink)" stroke-width="2"></circle></svg><span id="ringText"></span></div>
+        <div class="key-item"><svg width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"
+          fill="var(--missing)" stroke="var(--muted)"></circle></svg><span>no forecast</span></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2 id="dayTitle">&nbsp;</h2>
+    <h3 id="probTitle"></h3>
+    <div class="chart" id="probChart"></div>
+    <div class="chart-legend" id="probLegend"></div>
+    <h3>Rain that fell in the 30 minutes after each time (mm)</h3>
+    <div class="chart" id="rainChart"></div>
+    <div class="chart-legend" id="rainLegend"></div>
+  </section>
+
+  <section class="card">
+    <h2 id="calTitle">&nbsp;</h2>
+    <p class="muted">Each square is a day, shaded by the most rain that fell in any 30 minutes of it. Pick a day to look at it.</p>
+    <svg id="cal" role="group" aria-label="Calendar of 2024"></svg>
+    <div class="legend" id="calLegend"></div>
+  </section>
+
+  <section class="card">
+    <h2 id="scoreTitle">&nbsp;</h2>
+    <p class="muted">Brier score: the mean squared difference between the forecast chance and what happened (1 or 0); lower is
+      better. The big number is how much less error the forest makes than persistence.</p>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <details class="card" id="tableBox">
+    <summary>All stations at this time, as a table</summary>
+    <div class="table-wrap"><table id="table"></table></div>
+  </details>
+
+  <footer>
+    <p><strong>How this page works.</strong> No model runs in your browser. The page stores what notebooks 09 and 10
+      produced: for every station and five-minute step of 2024, the final random forest's chance of more than 0, 0.2,
+      0.5, 1, 2, 5, 10 and 20 mm in the next 30 minutes (rounded to 0.4%), and the rain that then fell. A threshold
+      between those values is filled in from how the rain was spread within each band in 2017–2023, exactly as
+      <code>task2/code/predict.py</code> does.</p>
+    <p><strong>Running the model itself.</strong> <code>python task2/code/predict.py S90 "2024-12-29 16:40" 5</code>
+      loads the saved forest (or <code>--model LR</code>, the logistic regression), builds the inputs from the feature
+      tables in <code>task2/data</code> and forecasts any station and time of 2017–2024. Only 2024 was held out; earlier
+      years were used for training.</p>
+    <p><strong>The forecasts.</strong> The forest was trained with Spark MLlib on 2017–2023 and uses 58 inputs: the
+      station, the clock, the station's own rain over the past minutes to day, and the rain at neighbouring stations,
+      upwind and how it is changing. Persistence is the reference: how often more than the threshold followed when the
+      previous 30 minutes had rain in the same band (none, up to 0.2 mm, 0.2–0.5 mm and so on), in 2017–2023.</p>
+    <p><strong>No forecast</strong> means the station has no reading at that time or one of its next six readings is
+      missing, the same rule as in training and testing. The last forecast of the year is made at 23:25 on 31 December.
+      Times are Singapore time; a time between readings uses the latest reading before it.</p>
+  </footer>
+</main>
+<div id="tip" class="tip" role="tooltip" hidden></div>
+
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script id="data" type="text/plain">__DATA__</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("payload").textContent);
+const E = D.edges, NS = D.stations.length, NT = D.n_slots, N = NS * NT, DAY = 288, YEAR = 2024;
+const DAYS = Math.ceil(NT / DAY), ALL = D.stations.map((_, i) => i);
+const MODELS = [{ key: "rf", name: "Random forest" }, { key: "pers", name: "Persistence" }];
+const PRESETS = [0, 0.5, 1, 2, 5, 10, 20];
+const RAMP_LIGHT = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"];
+const RAMP_DARK = ["#104281", "#184f95", "#256abf", "#3987e5", "#6da7ec", "#9ec5f4", "#cde2fb"];
+const RAIN_LIGHT = ["#f89571", "#eb6834", "#c9511d", "#a24017", "#7f3212"];
+const RAIN_DARK = ["#8a3918", "#b04518", "#d95926", "#f28057", "#fcae92"];
+const RAIN_STEPS = [1, 5, 10, 20];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const SVGNS = "http://www.w3.org/2000/svg";
+const PERS = Array.from({ length: 10 }, (_, c) => D.persistence[String(c - 1)]);
+const LUT = new Uint8Array(65536);             /* past 30-minute rain in 0.1 mm -> persistence row, 0 = no record */
+for (let v = 0; v < 65535; v++) { let c = 1; for (const e of E) if (v > Math.round(e * 10)) c++; LUT[v] = c; }
+const state = { st: 0, day: 0, s: 0, theta: 0, k: 1, q: 1, cut: 0, map: "rf", timer: null };
+const scores = { day: null, station: null, year: null };
+let RF, Y, P30, yearTimer = null;
+const $ = (id) => document.getElementById(id);
+
+function el(tag, attrs, parent) {
+  const node = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  if (parent) parent.appendChild(node);
+  return node;
+}
+function html(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text != null) node.textContent = text;
+  return node;
+}
+
+/* ---------- data ---------- */
+async function unpack() {
+  const node = $("data"), bin = atob(node.textContent.trim()), raw = new Uint8Array(bin.length);
+  node.remove();
+  for (let i = 0; i < bin.length; i++) raw[i] = bin.charCodeAt(i);
+  const buf = await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+  RF = new Uint8Array(buf, 0, 8 * N);
+  Y = new Uint16Array(buf, 8 * N, N);
+  P30 = new Uint16Array(buf, 10 * N, N);
+}
+function locate(theta) {                       /* band holding theta, and the share of its 2017-2023 rain above theta */
+  let k = 0;
+  while (k < E.length && E[k] <= theta) k++;
+  const c = D.mapper[String(k)];
+  let num = 0, den = 0;
+  for (let i = 0; i < c.y.length; i++) { den += c.w[i]; if (c.y[i] > theta) num += c.w[i]; }
+  return [k, num / den];
+}
+const cell = (st, t) => (t >= 0 && t < NT ? st * NT + t : -1);
+function prob(model, i) {
+  if (i < 0 || RF[i] === 255) return null;
+  const k = state.k, q = state.q;
+  if (model === "rf") { const hi = k < 8 ? RF[k * N + i] : 0; return (hi + q * (RF[(k - 1) * N + i] - hi)) / 254; }
+  const e = PERS[LUT[P30[i]]], hi = k < 8 ? e[k] : 0;
+  return hi + q * (e[k - 1] - hi);
+}
+const observed = (i) => (i < 0 || Y[i] === 65535 ? null : Y[i] / 10);
+const pastRain = (i) => (i < 0 || P30[i] === 65535 ? null : P30[i] / 10);
+const isEvent = (i) => i >= 0 && Y[i] !== 65535 && Y[i] > state.cut;
+function brier(stations, t0, t1) {
+  const k = state.k, q = state.q, lo = (k - 1) * N, hi = k * N, cut = state.cut;
+  const pp = PERS.map((e) => { const h = k < 8 ? e[k] : 0; return h + q * (e[k - 1] - h); });
+  let n = 0, events = 0, rf = 0, pers = 0;
+  for (const st of stations) {
+    for (let i = st * NT + t0, end = st * NT + t1; i < end; i++) {
+      const l = RF[lo + i];
+      if (l === 255) continue;
+      const h = k < 8 ? RF[hi + i] : 0, o = Y[i] > cut ? 1 : 0, p = (h + q * (l - h)) / 254, b = pp[LUT[P30[i]]];
+      n++; events += o; rf += (p - o) * (p - o); pers += (b - o) * (b - o);
+    }
+  }
+  return { n, events, rf: rf / n, pers: pers / n };
+}
+
+/* ---------- formatting ---------- */
+const pad = (v) => String(v).padStart(2, "0");
+const hhmm = (s) => { s = ((s % DAY) + DAY) % DAY; return `${pad(Math.floor(s / 12))}:${pad((s % 12) * 5)}`; };
+const utc = (day) => new Date(Date.UTC(YEAR, 0, 1 + day));
+const isoDate = (day) => utc(day).toISOString().slice(0, 10);
+const dayOf = (iso) => /^\d{4}-\d{2}-\d{2}$/.test(iso) ? Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.UTC(YEAR, 0, 1)) / 864e5) : NaN;
+const dateText = (day, short) => utc(day).toLocaleDateString("en-GB", short
+  ? { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }
+  : { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const num = (v) => String(+v.toFixed(2));
+const pct = (p) => p == null ? "–" : p < 0.005 ? "<1%" : p > 0.995 ? ">99%" : `${Math.round(p * 100)}%`;
+const mm = (v) => v == null ? "–" : `${v.toFixed(1)} mm`;
+const thetaText = (t) => t === 0 ? "any rain" : `more than ${num(t)} mm`;
+const count = (v) => v.toLocaleString("en");
+
+/* ---------- colour ---------- */
+const darkQuery = matchMedia("(prefers-color-scheme: dark)");
+const isDark = () => document.documentElement.dataset.theme === "dark"
+  || (document.documentElement.dataset.theme !== "light" && darkQuery.matches);
+const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function ramp(p) {
+  const r = isDark() ? RAMP_DARK : RAMP_LIGHT;
+  const x = Math.min(Math.max(p, 0), 1) * (r.length - 1), i = Math.min(Math.floor(x), r.length - 2), t = x - i;
+  const a = rgb(r[i]), b = rgb(r[i + 1]);
+  return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * t)).join(",")})`;
+}
+const rainStep = (v) => (isDark() ? RAIN_DARK : RAIN_LIGHT)[RAIN_STEPS.filter((s) => v > s).length];
+
+/* ---------- tooltip ---------- */
+const tip = $("tip");
+function showTip(rows, head, x, y) {
+  tip.replaceChildren(html("div", "t-head", head));
+  for (const [key, label, value] of rows) {
+    const row = html("div", "t-row");
+    if (key) row.append(html("span", `key ${key}`));
+    row.append(html("span", null, label), html("strong", null, value));
+    tip.append(row);
+  }
+  tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = `${Math.max(8, Math.min(x + 14, innerWidth - w - 8))}px`;
+  tip.style.top = `${y + 14 + h > innerHeight ? y - h - 10 : y + 14}px`;
+}
+const hideTip = () => { tip.hidden = true; };
+
+/* ---------- map ---------- */
+let stationEls = [], selLabel = null;
+function buildMap() {
+  const svg = $("map");
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const ring of D.outline) for (const [lon, lat] of ring) {
+    x0 = Math.min(x0, lon); x1 = Math.max(x1, lon); y0 = Math.min(y0, lat); y1 = Math.max(y1, lat);
+  }
+  const cos = Math.cos(1.35 * Math.PI / 180), W = 640, pad = 16, k = (W - 2 * pad) / ((x1 - x0) * cos);
+  const H = (y1 - y0) * k + 2 * pad;
+  const proj = (lon, lat) => [pad + (lon - x0) * cos * k, pad + (y1 - lat) * k];
+  svg.setAttribute("viewBox", `0 0 ${W} ${H.toFixed(0)}`);
+  const d = D.outline.map((r) => "M" + r.map(([lon, lat]) => proj(lon, lat).map((v) => v.toFixed(1)).join(",")).join("L") + "Z").join("");
+  el("path", { d, class: "land" }, svg);
+  stationEls = D.stations.map((st, i) => {
+    const [x, y] = proj(st.lon, st.lat);
+    const g = el("g", { class: "st", tabindex: "0", role: "button", transform: `translate(${x.toFixed(1)},${y.toFixed(1)})` }, svg);
+    g.setAttribute("aria-label", `${st.name} (${st.id})`);
+    el("circle", { r: 13, class: "hit" }, g);
+    const ring = el("circle", { r: 10, class: "outcome" }, g);
+    const dot = el("circle", { r: 6.5, class: "dot none" }, g);
+    g.addEventListener("click", () => { if (RF) update({ st: i }); });
+    g.addEventListener("keydown", (ev) => { if (RF && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); update({ st: i }); } });
+    g.addEventListener("pointermove", (ev) => stationTip(i, ev.clientX, ev.clientY));
+    g.addEventListener("pointerleave", hideTip);
+    g.addEventListener("focus", () => { const b = g.getBoundingClientRect(); stationTip(i, b.right, b.top); });
+    g.addEventListener("blur", hideTip);
+    return { g, ring, dot, x, y };
+  });
+  selLabel = el("text", { class: "sel-label" }, svg);
+}
+function stationTip(st, x, y) {
+  if (!RF) return;
+  const s = state.s, i = cell(st, state.day * DAY + s), ob = observed(i);
+  const rows = MODELS.map((m) => [m.key, m.name, pct(prob(m.key, i))]);
+  rows.push([null, "What fell", ob == null ? "–" : `${mm(ob)}, ${isEvent(i) ? "yes" : "no"}`]);
+  showTip(rows, `${D.stations[st].name} · ${thetaText(state.theta)}, ${hhmm(s)}–${hhmm(s + 6)}`, x, y);
+}
+function renderMap() {
+  const s = state.s, t = state.day * DAY + s;
+  let reporting = 0, wet = 0, events = 0;
+  stationEls.forEach((m, st) => {
+    const i = cell(st, t), p = prob(state.map, i);
+    if (p == null) { m.dot.setAttribute("class", "dot none"); m.dot.style.fill = ""; }
+    else { m.dot.setAttribute("class", "dot"); m.dot.style.fill = ramp(p); reporting++; if (pastRain(i) > 0) wet++; }
+    const event = isEvent(i);
+    if (event) events++;
+    m.ring.style.display = event ? "" : "none";
+    m.dot.setAttribute("r", st === state.st ? 8.5 : 6.5);
+    m.ring.setAttribute("r", st === state.st ? 12.5 : 10);
+  });
+  const sel = stationEls[state.st];
+  sel.g.parentNode.insertBefore(sel.g, selLabel);
+  selLabel.textContent = D.stations[state.st].name;
+  const right = sel.x < 470;
+  selLabel.setAttribute("x", (sel.x + (right ? 14 : -14)).toFixed(1));
+  selLabel.setAttribute("y", (sel.y - 10).toFixed(1));
+  selLabel.setAttribute("text-anchor", right ? "start" : "end");
+  $("mapTitle").textContent = `Chance of ${thetaText(state.theta)}, ${hhmm(s)}–${hhmm(s + 6)}`;
+  $("mapNote").textContent = reporting === 0 ? `No forecasts at ${hhmm(s)} on this day.`
+    : `${MODELS.find((m) => m.key === state.map).name}. ${wet} of the ${reporting} stations with a forecast had rain in the previous 30 minutes; ${thetaText(state.theta)} then fell at ${events}.`;
+  $("ringText").textContent = `${thetaText(state.theta)} fell in the next 30 minutes`;
+}
+
+/* ---------- answer and day charts ---------- */
+function renderAnswer() {
+  const st = D.stations[state.st], s = state.s, t = state.day * DAY + s, i = cell(state.st, t);
+  const p = { rf: prob("rf", i), pers: prob("pers", i) };
+  $("stName").textContent = `${st.name} (${st.id})`;
+  $("when").textContent = `Forecast made at ${hhmm(s)} on ${dateText(state.day)}, for the rain from ${hhmm(s)} to ${hhmm(s + 6)}.`;
+  $("bigP").textContent = pct(p.rf);
+  $("modelList").replaceChildren(...MODELS.map((m) => {
+    const li = html("li", m.key === "rf" ? "on" : "");
+    li.append(html("span", `key ${m.key}`), html("span", null, m.name), html("strong", null, pct(p[m.key])));
+    return li;
+  }));
+  renderDist(i, p);
+  if (p.rf == null) {
+    $("bigLabel").textContent = "no forecast";
+    $("observed").textContent = t >= NT ? "The 30 minutes after this time run into 2025, which the data does not cover."
+      : `${st.name} has no reading at ${hhmm(s)}, or one of its next six readings is missing, so there is nothing to forecast from or to check against.`;
+    $("past").textContent = "";
+    return;
+  }
+  $("bigLabel").textContent = `chance of ${thetaText(state.theta)} in the next 30 minutes, from the random forest`;
+  $("observed").textContent = `What happened: ${mm(observed(i))} fell in those 30 minutes, so ${thetaText(state.theta)}: ${isEvent(i) ? "yes" : "no"}.`;
+  const before = pastRain(i);
+  $("past").textContent = before == null ? "The 30 minutes before are not fully recorded, so persistence uses its no-record row."
+    : `Rain in the 30 minutes before: ${mm(before)}. Persistence forecasts from this alone.`;
+}
+function renderDist(i, p) {
+  const table = $("dist");
+  if (p.rf == null) { table.replaceChildren(); return; }
+  const rows = E.map((e, j) => ({ t: e, rf: RF[j * N + i] / 254, pers: PERS[LUT[P30[i]]][j], on: e === state.theta }));
+  if (!E.includes(state.theta)) rows.push({ t: state.theta, rf: p.rf, pers: p.pers, on: true });
+  rows.sort((a, b) => a.t - b.t);
+  const head = html("tr");
+  for (const label of ["More than", "", "Forest", "Persistence"]) head.append(html("th", null, label));
+  table.replaceChildren(html("thead"), html("tbody"));
+  table.tHead.append(head);
+  for (const r of rows) {
+    const tr = html("tr", r.on ? "on" : ""), bar = html("td", "barcell"), track = html("div", "bar-track"), fill = html("div", "bar-fill");
+    fill.style.width = `${(r.rf * 100).toFixed(1)}%`;
+    track.append(fill); bar.append(track);
+    tr.append(html("td", null, r.t === 0 ? "0 mm (any rain)" : `${num(r.t)} mm`), bar, html("td", null, pct(r.rf)), html("td", null, pct(r.pers)));
+    table.tBodies[0].append(tr);
+  }
+}
+function frame(container, height, bottom) {
+  const w = Math.max(container.clientWidth, 260);
+  const svg = el("svg", { width: w, height, viewBox: `0 0 ${w} ${height}` });
+  container.replaceChildren(svg);
+  const m = { l: 40, r: 6, t: 6, b: bottom };
+  const x = (s) => m.l + (s / DAY) * (w - m.l - m.r);
+  return { svg, w, h: height, m, x };
+}
+function xTicks(svg, x, h, m) {
+  for (const s of [0, 72, 144, 216, 288]) {
+    const t = el("text", { x: x(s), y: h - m.b + 15, class: "tick", "text-anchor": s === 0 ? "start" : s === DAY ? "end" : "middle" }, svg);
+    t.textContent = s === DAY ? "24:00" : hhmm(s);
+  }
+}
+function hoverLayer(svg, x, m, w, h, draw) {
+  const line = el("line", { y1: m.t, y2: h - m.b, class: "hover", visibility: "hidden" }, svg);
+  const padRect = el("rect", { x: m.l, y: 0, width: w - m.l - m.r, height: h, fill: "transparent" }, svg);
+  const slotAt = (ev) => {
+    const b = padRect.getBoundingClientRect();
+    return Math.min(DAY - 1, Math.max(0, Math.floor(((ev.clientX - b.left) / b.width) * DAY)));
+  };
+  padRect.addEventListener("pointermove", (ev) => {
+    const s = slotAt(ev);
+    line.setAttribute("x1", x(s + 0.5)); line.setAttribute("x2", x(s + 0.5)); line.setAttribute("visibility", "visible");
+    draw(s, ev.clientX, ev.clientY);
+  });
+  padRect.addEventListener("pointerleave", () => { line.setAttribute("visibility", "hidden"); hideTip(); });
+  padRect.addEventListener("click", (ev) => { stop(); update({ s: slotAt(ev) }); });
+}
+function drawProb() {
+  const { svg, w, h, m, x } = frame($("probChart"), 170, 20);
+  const y = (p) => m.t + (1 - p) * (h - m.t - m.b), base = state.day * DAY, st = state.st;
+  let run = null;
+  for (let s = 0; s <= DAY; s++) {
+    const ev = s < DAY && isEvent(cell(st, base + s));
+    if (ev && run == null) run = s;
+    if (!ev && run != null) { el("rect", { x: x(run), y: m.t, width: x(s) - x(run), height: h - m.t - m.b, class: "wash" }, svg); run = null; }
+  }
+  for (const p of [0, 0.5, 1]) {
+    el("line", { x1: m.l, x2: w - m.r, y1: y(p), y2: y(p), class: p === 0 ? "axis" : "grid" }, svg);
+    el("text", { x: m.l - 6, y: y(p) + 4, class: "tick", "text-anchor": "end" }, svg).textContent = `${p * 100}%`;
+  }
+  for (const mo of [...MODELS].reverse()) {
+    let d = "", pen = false;
+    for (let s = 0; s < DAY; s++) {
+      const p = prob(mo.key, cell(st, base + s));
+      if (p == null) { pen = false; continue; }
+      d += `${pen ? "L" : "M"}${x(s + 0.5).toFixed(1)},${y(p).toFixed(1)}`;
+      pen = true;
+    }
+    el("path", { d, class: `line ${mo.key}` }, svg);
+  }
+  el("line", { x1: x(state.s + 0.5), x2: x(state.s + 0.5), y1: m.t, y2: h - m.b, class: "cursor" }, svg);
+  xTicks(svg, x, h, m);
+  $("dayTitle").textContent = `${D.stations[st].name} through ${dateText(state.day)}`;
+  $("probTitle").textContent = `Chance of ${thetaText(state.theta)} in the next 30 minutes, forecast every five minutes`;
+  hoverLayer(svg, x, m, w, h, (s, cx, cy) => {
+    const i = cell(st, base + s), ob = observed(i), rows = MODELS.map((mo) => [mo.key, mo.name, pct(prob(mo.key, i))]);
+    rows.push([null, "What fell", ob == null ? "–" : mm(ob)]);
+    showTip(rows, `Forecast at ${hhmm(s)} for ${hhmm(s)}–${hhmm(s + 6)}`, cx, cy);
+  });
+  const legend = $("probLegend");
+  legend.replaceChildren(...MODELS.map((mo) => {
+    const item = html("span", "key-item");
+    item.append(html("span", `key ${mo.key}`), html("span", null, mo.name));
+    return item;
+  }));
+  const wash = html("span", "key-item");
+  wash.append(html("span", "swatch"), html("span", null, `${thetaText(state.theta)} followed`));
+  legend.append(wash);
+}
+function niceMax(v) {
+  for (const s of [1, 2, 5, 10, 20, 50, 100]) if (v <= s) return s;
+  return Math.ceil(v / 50) * 50;
+}
+function drawRain() {
+  const { svg, w, h, m, x } = frame($("rainChart"), 120, 20);
+  const base = state.day * DAY, st = state.st;
+  let max = 0;
+  for (let s = 0; s < DAY; s++) max = Math.max(max, observed(cell(st, base + s)) || 0);
+  const top = niceMax(Math.max(max, state.theta * 1.15, 1)), y = (v) => m.t + (1 - v / top) * (h - m.t - m.b);
+  el("line", { x1: m.l, x2: w - m.r, y1: y(top), y2: y(top), class: "grid" }, svg);
+  el("line", { x1: m.l, x2: w - m.r, y1: y(0), y2: y(0), class: "axis" }, svg);
+  for (const v of [0, top]) el("text", { x: m.l - 6, y: y(v) + 4, class: "tick", "text-anchor": "end" }, svg).textContent = String(v);
+  const bw = Math.max(1, (w - m.l - m.r) / DAY - 0.3);
+  for (let s = 0; s < DAY; s++) {
+    const v = observed(cell(st, base + s));
+    if (v) el("rect", { x: x(s), y: y(v), width: bw, height: y(0) - y(v), class: "bar" }, svg);
+  }
+  if (state.theta > 0) el("line", { x1: m.l, x2: w - m.r, y1: y(state.theta), y2: y(state.theta), class: "threshold" }, svg);
+  el("line", { x1: x(state.s + 0.5), x2: x(state.s + 0.5), y1: m.t, y2: h - m.b, class: "cursor" }, svg);
+  xTicks(svg, x, h, m);
+  hoverLayer(svg, x, m, w, h, (s, cx, cy) => {
+    const i = cell(st, base + s), v = observed(i);
+    showTip([[null, "Rain", v == null ? "no record" : mm(v)], [null, thetaText(state.theta), v == null ? "–" : isEvent(i) ? "yes" : "no"]],
+      `${hhmm(s)}–${hhmm(s + 6)}`, cx, cy);
+  });
+  const legend = $("rainLegend"), bars = html("span", "key-item");
+  bars.append(html("span", "swatch rain"), html("span", null, "rain in the 30 minutes after each time"));
+  legend.replaceChildren(bars);
+  if (state.theta > 0) {
+    const line = html("span", "key-item");
+    line.append(html("span", "key dash"), html("span", null, `threshold, ${num(state.theta)} mm`));
+    legend.append(line);
+  }
+}
+
+/* ---------- year calendar ---------- */
+function renderCalendar() {
+  const svg = $("cal"), st = state.st, cellPx = 12, gap = 2, step = cellPx + gap, left = 30, top = 16;
+  const most = new Int32Array(DAYS).fill(-1);
+  for (let t = 0; t < NT; t++) {
+    const v = Y[st * NT + t];
+    if (v !== 65535) { const d = (t / DAY) | 0; if (v > most[d]) most[d] = v; }
+  }
+  const offset = (utc(0).getUTCDay() + 6) % 7, weeks = Math.ceil((DAYS + offset) / 7);
+  svg.setAttribute("viewBox", `0 0 ${left + weeks * step + 2} ${top + 7 * step + 2}`);
+  svg.replaceChildren();
+  MONTHS.forEach((name, mth) => {
+    const d = dayOf(`${YEAR}-${pad(mth + 1)}-01`);
+    el("text", { x: left + Math.floor((d + offset) / 7) * step, y: 11, class: "cal-label" }, svg).textContent = name;
+  });
+  for (const [row, name] of [[0, "Mon"], [2, "Wed"], [4, "Fri"], [6, "Sun"]]) {
+    el("text", { x: 0, y: top + row * step + 10, class: "cal-label" }, svg).textContent = name;
+  }
+  for (let d = 0; d < DAYS; d++) {
+    const v = most[d], w = Math.floor((d + offset) / 7), r = (d + offset) % 7;
+    const cls = v < 0 ? "day empty" : v === 0 ? "day dry" : "day";
+    const rect = el("rect", { x: left + w * step + 1, y: top + r * step + 1, width: cellPx, height: cellPx, rx: 2,
+                              class: d === state.day ? `${cls} on` : cls }, svg);
+    if (v > 0) rect.style.fill = rainStep(v / 10);
+    rect.addEventListener("click", () => { stop(); update({ day: d }); });
+    rect.addEventListener("pointermove", (ev) => showTip([[null, "Most in 30 minutes", v < 0 ? "no record" : v === 0 ? "dry" : mm(v / 10)]],
+      dateText(d), ev.clientX, ev.clientY));
+    rect.addEventListener("pointerleave", hideTip);
+  }
+  $("calTitle").textContent = `2024 at ${D.stations[st].name}`;
+}
+function paintLegends() {
+  $("rampBar").style.background = `linear-gradient(90deg, ${(isDark() ? RAMP_DARK : RAMP_LIGHT).join(",")})`;
+  const steps = isDark() ? RAIN_DARK : RAIN_LIGHT, labels = ["up to 1 mm", "1–5", "5–10", "10–20", "over 20 mm"];
+  const legend = $("calLegend");
+  const item = (style, text) => {
+    const span = html("span", "key-item"), key = html("span", "cell-key");
+    Object.assign(key.style, style);
+    span.append(key, html("span", null, text));
+    return span;
+  };
+  legend.replaceChildren(item({ background: "none", outline: "1px solid var(--grid)", outlineOffset: "-1px" }, "no record"),
+    item({ background: "var(--missing)" }, "dry"), ...steps.map((c, j) => item({ background: c }, labels[j])));
+}
+
+/* ---------- scores and table ---------- */
+function renderScores() {
+  $("scoreTitle").textContent = `How the forest does at ${thetaText(state.theta)}`;
+  const tiles = [
+    ["This day, all stations", scores.day], [`${D.stations[state.st].name}, all of 2024`, scores.station],
+    ["All stations, all of 2024", scores.year]];
+  $("tiles").replaceChildren(...tiles.map(([name, sc]) => {
+    const tile = html("div", "tile");
+    tile.append(html("div", "name", name));
+    if (!sc) { tile.append(html("div", "value", "…"), html("div", "sub", "adding up 6.4 million forecasts")); return tile; }
+    if (!sc.n) { tile.append(html("div", "value", "–"), html("div", "sub", "no forecasts")); return tile; }
+    const skill = sc.pers > 0 ? 1 - sc.rf / sc.pers : null;
+    tile.append(html("div", "value", skill == null ? "–" : `${Math.round(skill * 100)}% less error`),
+      html("div", "sub", `Brier ${sc.rf.toFixed(4)} against ${sc.pers.toFixed(4)} for persistence`),
+      html("div", "sub", `${count(sc.n)} forecasts, ${count(sc.events)} followed by ${thetaText(state.theta)}`));
+    return tile;
+  }));
+}
+function scheduleYear() {
+  clearTimeout(yearTimer);
+  scores.year = null;
+  yearTimer = setTimeout(() => { scores.year = brier(ALL, 0, NT); renderScores(); }, 150);
+}
+function renderTable() {
+  if (!$("tableBox").open) return;
+  const t = state.day * DAY + state.s;
+  const rows = D.stations.map((st, j) => {
+    const i = cell(j, t);
+    return { st, rf: prob("rf", i), pers: prob("pers", i), ob: observed(i), before: pastRain(i), ev: isEvent(i) };
+  });
+  rows.sort((a, b) => (b.rf ?? -1) - (a.rf ?? -1));
+  const head = html("tr");
+  for (const label of ["Station", "Random forest", "Persistence", `What fell (${thetaText(state.theta)})`, "Previous 30 minutes"]) head.append(html("th", null, label));
+  const table = $("table");
+  table.replaceChildren(html("thead"), html("tbody"));
+  table.tHead.append(head);
+  for (const r of rows) {
+    const tr = html("tr");
+    tr.append(html("td", null, `${r.st.name} (${r.st.id})`), html("td", null, pct(r.rf)), html("td", null, pct(r.pers)),
+      html("td", null, r.ob == null ? "–" : `${mm(r.ob)} (${r.ev ? "yes" : "no"})`), html("td", null, mm(r.before)));
+    table.tBodies[0].append(tr);
+  }
+}
+
+/* ---------- state ---------- */
+function renderStory() {
+  const k = D.examples.findIndex((ex) => Math.floor(ex.slot / DAY) === state.day);
+  for (const b of $("examples").children) b.setAttribute("aria-pressed", String(Number(b.dataset.i) === k));
+  const story = $("story");
+  if (k < 0) { story.replaceChildren(); return; }
+  story.replaceChildren(html("strong", null, `${D.examples[k].title}, ${dateText(state.day)}. `), document.createTextNode(D.examples[k].text));
+}
+function sync(source) {
+  if (source !== "station") $("station").value = String(state.st);
+  if (source !== "date") { $("date").value = isoDate(state.day); $("date").removeAttribute("aria-invalid"); }
+  if (source !== "time") $("time").value = hhmm(state.s);
+  if (source !== "theta") { $("theta").value = num(state.theta); $("theta").removeAttribute("aria-invalid"); }
+  $("slider").value = String(state.s);
+  $("sliderOut").textContent = hhmm(state.s);
+  for (const b of $("presets").children) b.setAttribute("aria-pressed", String(Number(b.dataset.v) === state.theta));
+  for (const b of $("mapModel").children) b.setAttribute("aria-pressed", String(b.dataset.key === state.map));
+}
+function renderNote() {
+  const notes = [], [, mi] = $("time").value.split(":").map(Number);
+  if ($("date").getAttribute("aria-invalid")) notes.push("This page holds 2024, the test year. For other years run predict.py (see the notes at the bottom).");
+  if (mi % 5) notes.push(`Using ${hhmm(state.s)}, the latest five-minute reading at or before ${$("time").value}.`);
+  if ($("theta").getAttribute("aria-invalid")) notes.push("The threshold is an amount of rain, 0 mm or more.");
+  $("note").textContent = notes.join(" ");
+}
+function writeHash() {
+  if (state.timer) return;
+  const h = `#${D.stations[state.st].id}/${isoDate(state.day)}/${hhmm(state.s)}/${num(state.theta)}`;
+  if (location.hash !== h) try { history.replaceState(null, "", h); } catch (err) { /* some browsers refuse on file:// */ }
+}
+function readHash() {
+  const [id, date, time, theta] = decodeURIComponent(location.hash.slice(1)).split("/");
+  const st = D.stations.findIndex((x) => x.id === id), day = dayOf(date || "");
+  const [hh, mi] = (time || "").split(":").map(Number), th = Number(theta);
+  if (st < 0 || !(day >= 0 && day < DAYS) || !(hh >= 0 && hh < 24 && mi >= 0 && mi < 60) || !(th >= 0)) return null;
+  return { st, day, s: Math.floor((hh * 60 + mi) / 5), theta: th };
+}
+function update(changes, source) {
+  Object.assign(state, changes);
+  if ("theta" in changes) { [state.k, state.q] = locate(state.theta); state.cut = Math.floor(state.theta * 10 + 1e-6); }
+  sync(source);
+  if ("st" in changes || "theta" in changes) scores.station = brier([state.st], 0, NT);
+  if ("day" in changes || "theta" in changes) scores.day = brier(ALL, state.day * DAY, Math.min(NT, state.day * DAY + DAY));
+  if ("theta" in changes) scheduleYear();
+  if ("st" in changes || "day" in changes) renderCalendar();
+  renderAnswer(); renderMap(); drawProb(); drawRain(); renderScores(); renderTable(); renderStory(); renderNote();
+  writeHash();
+}
+function step(delta) {
+  const t = Math.min(Math.max(state.day * DAY + state.s + delta, 0), DAYS * DAY - 1);
+  const day = Math.floor(t / DAY), changes = { s: t % DAY };
+  if (day !== state.day) changes.day = day;
+  update(changes);
+}
+function stop() { if (state.timer) { clearInterval(state.timer); state.timer = null; $("play").textContent = "Play"; writeHash(); } }
+function play() {
+  if (state.timer) return stop();
+  if (state.s >= DAY - 1) update({ s: 0 });
+  $("play").textContent = "Pause";
+  state.timer = setInterval(() => { if (state.s >= DAY - 1) stop(); else update({ s: state.s + 1 }); }, 110);
+}
+
+/* ---------- controls ---------- */
+[...D.stations.keys()].sort((a, b) => D.stations[a].name.localeCompare(D.stations[b].name)).forEach((i) => {
+  const o = html("option", null, `${D.stations[i].name} (${D.stations[i].id})`);
+  o.value = String(i);
+  $("station").append(o);
+});
+PRESETS.forEach((v) => {
+  const b = html("button", "pill", v === 0 ? "any rain" : `${v} mm`);
+  b.type = "button"; b.dataset.v = v;
+  b.addEventListener("click", () => update({ theta: v }));
+  $("presets").append(b);
+});
+MODELS.forEach((m) => {
+  const b = html("button", null, m.key === "rf" ? "Forest" : m.name);
+  b.type = "button"; b.dataset.key = m.key;
+  b.addEventListener("click", () => { if (RF) update({ map: m.key }); });
+  $("mapModel").append(b);
+});
+D.examples.forEach((ex, i) => {
+  const b = html("button", "pill", ex.title);
+  b.type = "button"; b.dataset.i = i;
+  b.addEventListener("click", () => {
+    stop();
+    update({ st: D.stations.findIndex((s) => s.id === ex.station), day: Math.floor(ex.slot / DAY), s: ex.slot % DAY, theta: ex.theta });
+  });
+  $("examples").append(b);
+});
+$("station").addEventListener("change", (ev) => update({ st: Number(ev.target.value) }, "station"));
+$("date").addEventListener("change", (ev) => {
+  const day = dayOf(ev.target.value);
+  if (!(day >= 0 && day < DAYS)) { ev.target.setAttribute("aria-invalid", "true"); renderNote(); return; }
+  ev.target.removeAttribute("aria-invalid");
+  stop();
+  update({ day }, "date");
+});
+$("time").addEventListener("change", (ev) => {
+  const [hh, mi] = ev.target.value.split(":").map(Number);
+  if (!(hh >= 0 && mi >= 0)) return;
+  stop();
+  update({ s: Math.floor((hh * 60 + mi) / 5) }, "time");
+});
+$("theta").addEventListener("input", (ev) => {
+  const v = ev.target.valueAsNumber;
+  if (ev.target.value === "") return;
+  if (!(v >= 0)) { ev.target.setAttribute("aria-invalid", "true"); renderNote(); return; }
+  ev.target.removeAttribute("aria-invalid");
+  update({ theta: v }, "theta");
+});
+$("slider").addEventListener("input", (ev) => { stop(); update({ s: Number(ev.target.value) }, "slider"); });
+$("prev").addEventListener("click", () => { stop(); step(-1); });
+$("next").addEventListener("click", () => { stop(); step(1); });
+$("play").addEventListener("click", play);
+$("tableBox").addEventListener("toggle", renderTable);
+darkQuery.addEventListener("change", () => { if (!RF) return; paintLegends(); renderCalendar(); renderMap(); });
+addEventListener("hashchange", () => { const h = readHash(); if (h && RF) update(h); });
+let resizeTimer = null;
+addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (RF) { drawProb(); drawRain(); } }, 120); });
+
+buildMap();
+paintLegends();
+if (!("DecompressionStream" in window)) {
+  $("bigP").textContent = "–";
+  $("bigLabel").textContent = "This browser cannot unpack the data. Please open the page in a current Chrome, Edge, Firefox or Safari.";
+} else {
+  unpack().then(() => {
+    $("query").disabled = false;
+    const ex = D.examples[0];
+    update(readHash() || { st: D.stations.findIndex((s) => s.id === ex.station), day: Math.floor(ex.slot / DAY), s: ex.slot % DAY, theta: ex.theta });
+  }).catch((err) => {
+    $("bigP").textContent = "–";
+    $("bigLabel").textContent = `The data could not be unpacked (${err.message}).`;
+  });
+}
+</script>
+</body>
+</html>
