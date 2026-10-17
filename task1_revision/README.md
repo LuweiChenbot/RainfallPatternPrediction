@@ -62,7 +62,7 @@ Nine figures, numbered by section (first digit) and order within the section.
 
 | Figure | Question | Finding | Task 2 implication |
 |---|---|---|---|
-| 00_coverage_by_month | Which stations reported when? | 11 months have no station at >= 90% coverage | Weight or filter by coverage; never treat gaps as zero |
+| 00_coverage_by_month | Which stations reported when? | 11 months have no station at >= 90% coverage | Never treat gaps as zero; Task 2 keeps only complete 30-minute windows instead of filtering by coverage |
 | 10_seasonal_cycle | Is there real seasonality, and can a regression describe it? (idea 2) | Month explains 28% of monthly variation (p = 0.006); only November is significant; two sine/cosine pairs capture the cycle | Encode day-of-year as sin/cos pairs; season is weak at monthly scale |
 | 11_anomalies (appendix) | Which years were unusual? | 2019 is driest (-2.1 mm/day), borderline after multiple-testing correction; annual means move <= 0.16 mm/day across 80/90/95% cutoffs | Year-level effects are small; do not overfit them |
 | 12_diurnal | What drives the afternoon peak? (idea 2 for the daily cycle) | Frequency (5.1x) far more than intensity (1.6x); three sine/cosine pairs give R² 0.82 | Encode hour as sin/cos pairs; hour mainly predicts whether it rains |
