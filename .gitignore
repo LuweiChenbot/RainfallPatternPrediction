@@ -3,6 +3,7 @@
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
+legacy/
 
 # Raw and generated datasets
 data/
