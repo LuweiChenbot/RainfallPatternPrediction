@@ -19,25 +19,13 @@ readings from 91 stations).
 | Report | `report/` |
 
 
-**What you can do without the data**
-- Open `task2/demo/rain_replay.html` in a browser (no server or Python needed) to look up the forest's forecast for any
-  station and time of 2024.
-- Read the results in `task2/results/`, the feature and model definitions in `task2/FEATURES.md` and
-  `task2/MODELS.md`, and the data-quality findings in `task1/docs/data_quality_findings.md`.
-
-**What you can run.** The five-minute station matrix, the result of Task 1, is included in `task1/data/matrix_5min/`,
-so the raw data is not needed to run Task 2. After [Setup](#setup), build the feature tables once and make a forecast
-with the saved models:
-
-```bash
-python task2/run_pipeline.py 01 02 05 06 08      # labels and feature tables (Tiers 0 to 3)
-python task2/code/predict.py S90 "2024-12-29 16:40" 5
-```
-
-The forecast should be 0.941 (random forest), with 65 mm observed. Do not run notebook 09 (`python task2/run_pipeline.py`
-without a list runs it): it refits the models and overwrites `task2/models/`, and the submitted ones took about 10 hours
-to fit on a 32-core, 256 GB machine. The raw data is needed only to rebuild the matrix, see
-[Task 1](#task-1-data-quality-and-rainfall-patterns).
+**Where to start**
+- **Just look at the forecasts:** open `task2/demo/rain_replay.html` in a browser. Nothing to install or run.
+- **Make a forecast with the saved models:** do [Setup](#setup), then follow Task 2, part B below (build the feature
+  tables first, then run `predict.py`).
+- **Task 1 needs no run:** its result, the five-minute station matrix, is included in `task1/data/matrix_5min/`, and the
+  raw data is only needed to rebuild it. The findings are in `task1/docs/data_quality_findings.md`; the definitions of
+  the label, features and models are in `task2/FEATURES.md` and `task2/MODELS.md`; the scores are in `task2/results/`.
 
 ## Setup
 
@@ -75,9 +63,9 @@ at the repository root (`HistoricalRainfallacrossSingapore2017.csv` to `...2024.
 
 ## Task 1: data quality and rainfall patterns
 
-The result of the last command below, the station matrix, is already included in the repository, so you can skip this
-section and go to Task 2. Run it only to rebuild the matrix from the raw files in `data/` (from the repository root).
-`build_matrix.py` refuses to overwrite an existing matrix, so delete `task1/data/matrix_5min/` first:
+To go straight to Task 2, skip this section: the station matrix, the result of the last command, is already in the
+repository. The commands below only rebuild it from the raw files in `data/`. `build_matrix.py` refuses to overwrite an
+existing matrix, so delete `task1/data/matrix_5min/` first.
 
 ```sh
 python task1/code/prepare_base_data.py --data-dir data --output-dir data/processed/rainfall_base    # CSV -> Parquet, 48,538,713 readings
@@ -90,43 +78,52 @@ python task1/code/build_matrix.py
 
 ## Task 2: predicting rain in the next 30 minutes
 
-Given a station, a prediction time and a threshold θ, the models estimate P(rainfall in the next 30 minutes > θ).
-`task2/FEATURES.md` and `task2/MODELS.md` define the label, the 58 features and each model.
+Given a station, a prediction time and a threshold θ, the models estimate P(rainfall in the next 30 minutes > θ). The
+label, the 58 features and each model are defined in `task2/FEATURES.md` and `task2/MODELS.md`.
 
-**Run** (the Task 1 station matrix is included):
+| You want to | Do | Time |
+|---|---|---|
+| A. look at the forecasts | open `task2/demo/rain_replay.html` | nothing to run |
+| B. make a forecast with the saved models | Step 1, then Step 2 below | tens of minutes, then about a minute per forecast |
+| C. rerun the whole pipeline | `python task2/run_pipeline.py` | hours; overwrites the saved models |
+
+### A. Look at the forecasts (nothing to run)
+
+Open `task2/demo/rain_replay.html` (12 MB, self-contained) in a current browser; it loads in a few seconds. Choose a
+station, a date and time in 2024 and a threshold θ. It shows the forest's P(Y > θ) next to persistence's and the rain that
+fell, with the day's forecasts, a map of all stations and Brier scores. 
+
+### B. Make a forecast with the saved models
+
+`predict.py` reads the saved models in `task2/models/` and the feature tables, so build the tables first. The station
+matrix from Task 1 is already included, and the raw data is not needed.
+
+**Step 1.** Build the labels and feature tables with notebooks 01, 02, 05, 06 and 08:
 
 ```bash
-python task2/run_pipeline.py             # all notebooks, in pipeline order 01, 02, 05, 06, 08, 03, 04, 07, 09, 10
-python task2/run_pipeline.py 03 04 07    # selected notebooks (still in pipeline order)
+python task2/run_pipeline.py 01 02 05 06 08
 ```
+**Do not run notebook 09** (a plain `python task2/run_pipeline.py` runs
+it): it refits the models and overwrites `task2/models/`.
 
-On Windows write `task2\run_pipeline.py`. The notebooks can also be run by hand in that order, one at a time (each
-starts its own Spark session). On a 16 GB, 8-core laptop with `train_frac0.1`, notebooks 01 to 06 take about 20 minutes
-and notebook 07 about an hour. The reported models were fitted on the full table (`RAIN_TRAIN=train_full`,
-`RAIN_RF_TREES=50`, `RAIN_RF_MEMORY_MB=512`) on a 32-core cloud machine with 256 GB of RAM; notebook 09 took about 10
-hours, almost all of it the random forest. Its `REUSE` setting loads an already fitted model from `task2/models/`
-instead of refitting it; the committed run fitted the logistic regression in an earlier, interrupted run of the same
-notebook with the same settings and loaded it here. Notebook 03 writes the training table named by `RAIN_TRAIN`;
-notebooks 04 and 07 read the same one.
-
-**Using the trained models.** With the feature tables built (notebooks 01 to 08), `predict.py` gives
-P(rain over the next 30 minutes > θ mm) for any station and time of 2017–2024:
+**Step 2.** Make a forecast, for any station and time of 2017–2024:
 
 ```bash
-python task2/code/predict.py S07 "2024-04-14 15:50" 5
-python task2/code/predict.py S07 "2024-04-14 15:50" 5 --model LR
+python task2/code/predict.py S90 "2024-12-29 16:40" 5            # random forest
+python task2/code/predict.py S90 "2024-12-29 16:40" 5 --model LR # logistic regression
 ```
 
-From Python: `predict.predict(station, time, theta, kind="RF")` or `predict.predict_many(queries, thetas)`. Times are
-Singapore local time; the forecast uses the latest reading at or before the given time, and a station without a reading
-then gets no forecast. Check: `python task2/code/predict.py S90 "2024-12-29 16:40" 5` should print 0.941 for the forest
-and report 65 mm observed.
+From Python, use
+`predict.predict(station, time, theta, kind="RF")` or `predict.predict_many(queries, thetas)`. Times are Singapore local
+time; the forecast uses the latest reading at or before the given time, and a station without a reading then gets no
+forecast.
 
-**Replay page and figures.** `task2/demo/rain_replay.html` (12 MB) is self-contained. Choose a station, a date and time
-in 2024 and a threshold θ; it shows the forest's P(Y > θ) next to persistence's and the rain that fell, with the day's
-forecasts, a map of all stations and Brier scores. It stores notebook 10's test-year forecasts and applies the same
-threshold mapper as `predict.py`; it does not run the model. A query can be linked, e.g.
-`rain_replay.html#S90/2024-12-29/16:40/5`. Rebuild it after notebook 10 with `python task2/code/build_replay.py`.
-`python task2/code/plot_results.py` draws the Task 2 report figures from `task2/results/` into `task2/outputs/`.
+### C. Rerun the whole pipeline (optional, retrains the models)
+
+```bash
+python task2/run_pipeline.py        # all notebooks, in the order 01, 02, 05, 06, 08, 03, 04, 07, 09, 10
+```
+
+- Run notebooks one at a time if you run them by hand: each starts its own Spark session.
 
 On Windows, Spark may print "Failed to delete" errors about its temporary folder when it stops; they are harmless.
