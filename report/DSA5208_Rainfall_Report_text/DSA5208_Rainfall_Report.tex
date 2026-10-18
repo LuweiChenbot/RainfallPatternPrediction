@@ -18,6 +18,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx,booktabs,longtable,array,calc}
 \usepackage{caption,placeins,needspace}
+\usepackage{pdflscape}
 \usepackage{etoolbox,titlesec,microtype,ragged2e,textcomp}
 \usepackage{xcolor,xurl}
 \usepackage[numbers,sort&compress]{natbib}
@@ -213,21 +214,65 @@ The project runs Apache Spark in local mode on a single machine. Parallelism is 
 \small
 \setlength{\parskip}{0pt}
 \renewcommand{\arraystretch}{1.18}
-\begin{longtable}{@{}>{\raggedright\arraybackslash}p{(\linewidth-6\tabcolsep)*\real{0.27}}>{\raggedright\arraybackslash}p{(\linewidth-6\tabcolsep)*\real{0.18}}>{\raggedright\arraybackslash}p{(\linewidth-6\tabcolsep)*\real{0.23}}>{\raggedright\arraybackslash}p{(\linewidth-6\tabcolsep)*\real{0.32}}@{}}
-\caption*{\textbf{Table 2.2.} Spark execution settings across project stages.}\\
+\begingroup
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{0pt}
+
+\begin{longtable}{
+    >{\raggedright\arraybackslash}
+    p{\dimexpr0.40\linewidth-2\tabcolsep\relax}
+    >{\raggedright\arraybackslash}
+    p{\dimexpr0.18\linewidth-2\tabcolsep\relax}
+    >{\raggedright\arraybackslash}
+    p{\dimexpr0.21\linewidth-2\tabcolsep\relax}
+    >{\raggedright\arraybackslash}
+    p{\dimexpr0.21\linewidth-2\tabcolsep\relax}
+}
+
 \toprule
-\textbf{Stage} & \textbf{Execution mode} & \textbf{Driver memory} & \textbf{Shuffle partitions} \\
+\textbf{Stage}
+& \textbf{Execution mode}
+& \textbf{Driver memory}
+& \textbf{Shuffle partitions} \\
 \midrule
 \endfirsthead
+
 \toprule
-\textbf{Stage} & \textbf{Execution mode} & \textbf{Driver memory} & \textbf{Shuffle partitions} \\
+\textbf{Stage}
+& \textbf{Execution mode}
+& \textbf{Driver memory}
+& \textbf{Shuffle partitions} \\
 \midrule
 \endhead
-Data validation and temporal preparation & local[4] & Not explicitly specified & Not explicitly specified \\
-Task 1 aggregation and station-matrix construction & local[4] & 4 GB & 32 \\
-Task 2 feature construction, training, and evaluation & local[8] & 10 GB & 96 \\
+
+Data validation and temporal preparation
+& \texttt{local[4]}
+& Spark default (1 GB)
+& Spark default (200) \\
+
+Task 1 aggregation and station-matrix construction
+& \texttt{local[4]}
+& 4 GB
+& 32 \\
+
+Task 2 labels and features (notebooks 01--06, 08), own machine
+& \texttt{local[8]}
+& 10 GB
+& 96 \\
+
+Task 2 tuning, final fit and test (notebooks 07, 09, 10),
+cloud VM with 32 vCPU and 252 GB RAM
+& \texttt{local[32]}
+& $[\ldots]$
+& $[\ldots]$ \\
+
 \bottomrule
 \end{longtable}
+
+\endgroup
 \endgroup
 
 
@@ -1399,8 +1444,19 @@ We acknowledge the use of ChatGPT/Codex (OpenAI) in preparing this project. AI t
 
 \subsection*{Claude}
 
-\subsection*{ChatGPT/Codex}
+Claude (Anthropic) generated most of the project code, including:
+\begin{itemize}
+    \item the data-quality audit and preprocessing scripts, including timestamp alignment, duplicate resolution, and conversion to Parquet;
+    \item the Task 1 rainfall aggregation, station-matrix construction, and visualisation scripts;
+    \item the Task 2 label construction, feature engineering, logistic regression and random forest training, hyperparameter tuning, and evaluation pipelines;
+    \item the prediction, result-plotting, and rainfall-replay scripts.
+\end{itemize}
 
+\subsection*{ChatGPT/Codex}
+ChatGPT/Codex was used as a supporting tool for proofreading grammatical errors in the
+report, improving formatting and presentation, reviewing the project code for consistency with
+the assignment requirements, and refining the clarity, organisation, and expression of the written
+report.
 
 \subsection*{Review and verification}
 
@@ -1419,34 +1475,6 @@ AI assistance does not replace the observed rainfall data, experiment outputs, s
 
 \clearpage
 
-\section*{Appendices}
-\phantomsection
-\addcontentsline{toc}{section}{Appendices}
-
-
-\subsection*{Appendix A. Detailed Data-Quality Results}
-\phantomsection
-\addcontentsline{toc}{subsection}{Appendix A. Detailed Data-Quality Results}
-
-
-\subsection*{Appendix B. Additional Task 1 Figures and Sensitivity Analyses}
-\phantomsection
-\addcontentsline{toc}{subsection}{Appendix B. Additional Task 1 Figures and Sensitivity Analyses}
-
-
-\subsection*{Appendix C. Full Feature Definitions and Hyperparameter Settings}
-\phantomsection
-\addcontentsline{toc}{subsection}{Appendix C. Full Feature Definitions and Hyperparameter Settings}
-
-
-\subsection*{Appendix D. Additional Evaluation Results}
-\phantomsection
-\addcontentsline{toc}{subsection}{Appendix D. Additional Evaluation Results}
-
-
-\subsection*{Appendix E. Reproduction Instructions and Submitted Model Files}
-\phantomsection
-\addcontentsline{toc}{subsection}{Appendix E. Reproduction Instructions and Submitted Model Files}
-
+\input{rainfall_appendices}
 
 \end{document}
