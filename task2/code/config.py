@@ -48,7 +48,7 @@ VAL_YEAR = 2023
 TEST_YEAR = 2024
 SEED = 42
 
-# machine settings, read from the environment so a larger machine needs no code changes (see task2/README.md)
+# machine settings, read from the environment so a larger machine needs no code changes (see the Setup section of the root README.md)
 SPARK_CORES = int(os.environ.get("RAIN_SPARK_CORES", "8"))
 SPARK_MEMORY = os.environ.get("RAIN_SPARK_MEMORY", "10g")
 SHUFFLE_PARTITIONS = int(os.environ.get("RAIN_SHUFFLE_PARTITIONS", "96"))
