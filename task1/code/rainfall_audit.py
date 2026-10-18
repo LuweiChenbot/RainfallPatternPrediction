@@ -1,7 +1,7 @@
 """Audit Singapore rainfall data without modifying or removing observations.
 
 Usage (activate your virtual environment with PySpark installed first):
-python code/rainfall_audit.py --data-dir data --output-dir audit_results
+python task1/code/rainfall_audit.py --data-dir data --output-dir audit_results
 
 Only summary tables are exported. Each run creates a separate output directory.
 """

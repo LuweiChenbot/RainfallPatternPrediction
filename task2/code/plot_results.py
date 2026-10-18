@@ -23,7 +23,7 @@ from matplotlib.lines import Line2D
 from scipy.stats import spearmanr
 
 TASK2 = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(TASK2.parent / "task1_revision" / "code"))
+sys.path.insert(0, str(TASK2.parent / "task1" / "code"))
 import common as K  # noqa: E402
 from common import AXIS, BLUE, INK, INK2, MUTED, ORANGE, SURFACE, TEXT_WIDTH, plt  # noqa: E402
 

@@ -24,7 +24,7 @@ def fetch(url):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path,
-                        default=Path("task1_revision/data/external/mp2019_region_boundary.geojson"))
+                        default=Path("task1/data/external/mp2019_region_boundary.geojson"))
     args = parser.parse_args()
     if args.output.exists():
         print(f"Boundary already present: {args.output}")

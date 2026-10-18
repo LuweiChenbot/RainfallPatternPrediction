@@ -1,7 +1,7 @@
 """Create a unique five-minute rainfall time grid from the base Parquet data.
 
 Run from the project root after activating the virtual environment:
-python code/prepare_temporal_data.py \
+python task1/code/prepare_temporal_data.py \
     --input-dir data/processed/rainfall_base \
     --output-dir data/processed/rainfall_aligned
 

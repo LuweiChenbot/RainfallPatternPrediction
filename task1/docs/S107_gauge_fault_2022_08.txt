@@ -3,8 +3,9 @@ S107 (East Coast Parkway) gauge fault, 19-22 August 2022
 
 Sources
   Raw readings : data/HistoricalRainfallacrossSingapore2022.csv
-  Stations     : task1_revision/data/matrix_5min/stations.csv
+  Stations     : task1/data/matrix_5min/stations.csv
   Task 1 files : outputs/task1/extreme_5min_readings.csv, outputs/task1/extreme_complete_days.csv
+                 (written by legacy/task1_analysis.py)
 
 Summary
   From about 19 Aug 23:20 to 22 Aug 03:45 the S107 gauge reported heavy rain

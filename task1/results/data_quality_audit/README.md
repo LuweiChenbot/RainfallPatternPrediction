@@ -1,7 +1,7 @@
 # Data-quality audit tables
 
 These small CSV files were produced by the latest verified run of
-`code/rainfall_audit.py` on 2026-09-30. They contain summaries only; no raw
+`task1/code/rainfall_audit.py` on 2026-09-30. They contain summaries only; no raw
 rainfall dataset is included.
 
 - `yearly_quality.csv`: annual completeness, validity, and update-time checks

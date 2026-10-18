@@ -26,7 +26,7 @@ Given a station, a prediction time and a threshold θ, the models estimate P(rai
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
-   pip install -r task2/requirements.txt
+   pip install -r requirements.txt
    ```
 
    Windows (PowerShell):
@@ -34,7 +34,7 @@ Given a station, a prediction time and a threshold θ, the models estimate P(rai
    ```powershell
    py -3.12 -m venv .venv
    .venv\Scripts\Activate.ps1
-   pip install -r task2\requirements.txt
+   pip install -r requirements.txt
    ```
 
 3. Windows only: Spark needs Hadoop's `winutils.exe` and `hadoop.dll` to write files.
@@ -43,7 +43,7 @@ Given a station, a prediction time and a threshold θ, the models estimate P(rai
    - Keep the repository at a short path such as `C:\rain`, because Spark's temporary file paths can exceed Windows' 260-character limit.
    - Alternatively, run everything inside WSL2 (Ubuntu) with the macOS/Linux commands above; this needs none of the Windows steps.
 
-4. Copy the input data. Task 2 starts from the five-minute station matrix `task1_revision/data/matrix_5min/` (6.6 MB, not in git): copy that folder from a machine that has it to the same place. Everything else is rebuilt by the notebooks. To start from the raw CSV files instead, follow the root `README.md` and then run `task1_revision/code/build_matrix.py`.
+4. Copy the input data. Task 2 starts from the five-minute station matrix `task1/data/matrix_5min/` (6.6 MB, not in git): copy that folder from a machine that has it to the same place. Everything else is rebuilt by the notebooks. To start from the raw CSV files instead, follow the root `README.md` and then run `task1/code/build_matrix.py`.
 
 5. Machine settings: copy `.env.example` to `.env` in the repository root and edit it.
    - `RAIN_SPARK_CORES`: number of CPU cores

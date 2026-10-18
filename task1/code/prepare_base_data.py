@@ -1,7 +1,7 @@
 """Convert the validated Singapore rainfall CSV files to partitioned Parquet.
 
 Run from the project root after activating the virtual environment:
-python code/prepare_base_data.py \
+python task1/code/prepare_base_data.py \
     --data-dir data \
     --output-dir data/processed/rainfall_base
 

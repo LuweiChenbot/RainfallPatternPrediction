@@ -14,7 +14,7 @@ import pyarrow.dataset as ds
 import config as C
 
 DEMO = C.ROOT / "task2" / "demo"
-BOUNDARY = C.ROOT / "task1_revision" / "data" / "external" / "mp2019_region_boundary.geojson"
+BOUNDARY = C.ROOT / "task1" / "data" / "external" / "mp2019_region_boundary.geojson"
 STATIONS = C.MATRIX / "stations.csv"
 DAY = 288
 EXAMPLES = [  # date, title, threshold in mm, story

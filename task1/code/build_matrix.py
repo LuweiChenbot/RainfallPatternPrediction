@@ -4,13 +4,13 @@ Spark reads, validates and pivots the 48.5 million aligned readings into one
 row per five-minute slot (Asia/Singapore, 2017-01-01 00:00 to 2024-12-31 23:55)
 and one column per station. A missing reading stays null; it is never zero.
 
-The revision analyses (lagged cross-correlation, rain-event segmentation and
+The Task 1 analyses (lagged cross-correlation, rain-event segmentation and
 multi-resolution aggregation) are matrix operations, which numpy performs on
 this array in seconds, whereas pairwise self-joins in Spark SQL would not be
 practical on a laptop. Spark still performs every row-level step.
 
 Run from the repository root:
-python task1_revision/code/build_matrix.py
+python task1/code/build_matrix.py
 """
 
 import argparse
@@ -36,7 +36,7 @@ def slot_of(moment):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", type=Path, default=Path("data/processed/rainfall_aligned"))
-    parser.add_argument("--output-dir", type=Path, default=Path("task1_revision/data/matrix_5min"))
+    parser.add_argument("--output-dir", type=Path, default=Path("task1/data/matrix_5min"))
     parser.add_argument("--master", default="local[4]")
     parser.add_argument("--driver-memory", default="4g")
     args = parser.parse_args()

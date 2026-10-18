@@ -1,1 +1,12 @@
+# Everything the project needs (Task 1 audit, preparation and figures; Task 2 pipeline, prediction and figures)
 pyspark[ml]==4.2.0
+pyarrow==20.0.0
+numpy>=1.26,<2
+pandas>=2.2,<3
+matplotlib>=3.9,<4
+scipy>=1.13,<2
+scikit-learn>=1.5,<2
+statsmodels>=0.14,<1
+nbclient>=0.8
+ipykernel>=6.28
+jupyterlab>=4.2

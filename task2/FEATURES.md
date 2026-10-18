@@ -8,9 +8,9 @@ Code: `task2/code/features.py` (time, Tier 1, Tier 2, Tier 3), `task2/notebooks/
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $s$, $j$ | a station ($s$ the station being forecast, $j$ another station) | `task1_revision/data/matrix_5min/stations.csv`, 91 stations |
+| $s$, $j$ | a station ($s$ the station being forecast, $j$ another station) | `task1/data/matrix_5min/stations.csv`, 91 stations |
 | $t$ | a five-minute slot, the prediction time; slot $0$ is 2017-01-01 00:00 Singapore time | `config.ORIGIN_EPOCH`, `config.SLOT_SECONDS` |
-| $r_{s,t}$ | rainfall (mm) recorded by station $s$ at slot $t$, after cleaning (below) | `task1_revision/data/matrix_5min/`, built by Spark from the aligned observations |
+| $r_{s,t}$ | rainfall (mm) recorded by station $s$ at slot $t$, after cleaning (below) | `task1/data/matrix_5min/`, built by Spark from the aligned observations |
 | $a_{s,t}$ | $1$ if $r_{s,t}$ is available (not missing), else $0$ | |
 | $(x_s, y_s)$ | station position in km east and north of the island centre | latest recorded longitude and latitude in `stations.csv` |
 | $d_{sj}$ | distance between stations $s$ and $j$ (km) | from $(x, y)$ |

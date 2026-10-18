@@ -8,11 +8,13 @@ Coverage describes what the stations reported, so this figure uses the raw readi
 import numpy as np
 import pandas as pd
 
-from common import BLUE, INK2, ORANGE, SEQUENTIAL, TASK1, TEXT_WIDTH, plt, record, save, style, write_table
+from common import (BLUE, INK2, ORANGE, SEQUENTIAL, TEXT_WIDTH, load_matrix, plt, record, save, station_periods, style,
+                    write_table)
 
 
 def coverage_by_month():
-    month = pd.read_csv(TASK1 / "station_month.csv", parse_dates=["month_start"])
+    month = station_periods(*load_matrix(clean=False), "month")
+    month["month_start"] = pd.to_datetime(dict(year=month.year, month=month.month, day=1))
     grid = month.pivot(index="station_id", columns="month_start", values="coverage")
     active = month[month.observations > 0]
     first = active.groupby("station_id").month_start.min()

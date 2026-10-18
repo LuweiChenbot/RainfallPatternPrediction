@@ -1,7 +1,6 @@
-"""Shared paths, plotting style, data cleaning and matrix helpers for the Task 1 revision.
+"""Shared paths, plotting style, data cleaning and matrix helpers for Task 1.
 
-Inputs are the five-minute matrix built by build_matrix.py and, for the coverage figure only,
-outputs/task1/station_month.csv. Everything this revision writes stays inside task1_revision/.
+The input is the five-minute matrix built by build_matrix.py. Everything Task 1 writes stays inside task1/.
 """
 
 import importlib.util
@@ -20,14 +19,13 @@ import pyarrow.parquet as pq
 from matplotlib.patches import Polygon
 
 ROOT = Path(__file__).resolve().parents[2]
-TASK1 = ROOT / "outputs" / "task1"
-REVISION = ROOT / "task1_revision"
-MATRIX = REVISION / "data" / "matrix_5min"
-BOUNDARY = REVISION / "data" / "external" / "mp2019_region_boundary.geojson"
-FIGURES = REVISION / "outputs" / "figures"
-TABLES = REVISION / "outputs" / "tables"
-RESULTS = REVISION / "outputs" / "results.json"
-CAPTIONS = REVISION / "outputs" / "captions.json"
+TASK1 = ROOT / "task1"
+MATRIX = TASK1 / "data" / "matrix_5min"
+BOUNDARY = TASK1 / "data" / "external" / "mp2019_region_boundary.geojson"
+FIGURES = TASK1 / "outputs" / "figures"
+TABLES = TASK1 / "outputs" / "tables"
+RESULTS = TASK1 / "outputs" / "results.json"
+CAPTIONS = TASK1 / "outputs" / "captions.json"
 TITLE = "Task 1 figures"
 TASK2_CONFIG = ROOT / "task2" / "code" / "config.py"
 

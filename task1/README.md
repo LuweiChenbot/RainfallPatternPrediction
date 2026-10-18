@@ -1,40 +1,49 @@
-# Task 1 revision
+# Task 1: data quality and rainfall patterns
 
-This folder revises the Task 1 figures following the review in `comments on task1.rtf`, and adds analyses
-that motivate Task 2 features. It is isolated from the original pipeline: it reads
-`outputs/task1/` and `data/processed/rainfall_aligned/` and writes only inside `task1_revision/`.
-The `data/` and `outputs/` subfolders are git-ignored, like the rest of the project's data.
+This folder holds all of Task 1: the audit and preparation of the raw rainfall files, the five-minute
+station matrix that Task 2 also starts from, and the nine report figures with their analyses. The
+`data/` and `outputs/` subfolders are git-ignored, like the rest of the project's data.
 
 ## Layout
 
 ```text
-task1_revision/
+task1/
   code/
-    fetch_boundary.py     URA Master Plan 2019 region boundary from data.gov.sg (map outline and regions)
-    build_matrix.py       Spark: aligned Parquet -> dense five-minute station matrix (null = no reading)
-    common.py             paths, palette, A4 style, caption store, data cleaning, correlation helpers
-    plot_preliminary.py   section 0: data reliability
-    plot_time.py          section 1: when it rains
-    plot_space.py         section 2: where it rains and how stations relate
-    plot_amount.py        section 3: day-to-day persistence
-  data/                   matrix_5min/ (6.6 MB Parquet), external/ (boundary GeoJSON)
+    rainfall_audit.py         data-quality audit of the raw CSV files (small summary tables only)
+    prepare_base_data.py      raw CSV -> typed, year-partitioned Parquet (48,538,713 readings)
+    prepare_temporal_data.py  aligns the 2017 ":59" stamps to the five-minute grid, resolves 86 duplicates (48,538,627)
+    fetch_boundary.py         URA Master Plan 2019 region boundary from data.gov.sg (map outline and regions)
+    build_matrix.py           Spark: aligned Parquet -> dense five-minute station matrix (null = no reading)
+    common.py                 paths, palette, A4 style, caption store, data cleaning, correlation helpers
+    plot_preliminary.py       section 0: data reliability
+    plot_time.py              section 1: when it rains
+    plot_space.py             section 2: where it rains and how stations relate
+    plot_amount.py            section 3: day-to-day persistence
+  docs/
+    data_quality_findings.md        audit findings and preparation decisions
+    S107_gauge_fault_2022_08.txt    evidence for the S107 gauge fault, masked in both tasks
+  results/data_quality_audit/       the audit's summary tables
+  data/                     matrix_5min/ (6.6 MB Parquet), external/ (boundary GeoJSON)
   outputs/
-    figures/              PDF (for LaTeX) and 300 dpi PNG of each figure
-    captions.json         caption, appendix body text and Task 2 link of each figure, kept off the image
-    captions.md           the same, for reading
-    figures.tex           LaTeX figure blocks at print width, main text first, then appendix
-    tables/               small CSV tables behind the figures
-    results.json          headline numbers quoted in the captions
+    figures/                PDF (for LaTeX) and 300 dpi PNG of each figure
+    captions.json           caption, appendix body text and Task 2 link of each figure, kept off the image
+    captions.md             the same, for reading
+    figures.tex             LaTeX figure blocks at print width, main text first, then appendix
+    tables/                 small CSV tables behind the figures
+    results.json            headline numbers quoted in the captions
 ```
 
 ## Run
 
-From the repository root, after the original preparation and `task1_analysis.py` have run:
+From the repository root, with the eight raw CSV files in `data/` (see the root `README.md`):
 
 ```sh
-python task1_revision/code/fetch_boundary.py
-python task1_revision/code/build_matrix.py          # a few minutes, Spark local[4]
-cd task1_revision/code
+python task1/code/rainfall_audit.py --data-dir data --output-dir audit_results      # optional: audit tables
+python task1/code/prepare_base_data.py --data-dir data --output-dir data/processed/rainfall_base
+python task1/code/prepare_temporal_data.py --input-dir data/processed/rainfall_base --output-dir data/processed/rainfall_aligned
+python task1/code/fetch_boundary.py
+python task1/code/build_matrix.py                    # a few minutes, Spark local[4]
+cd task1/code
 python plot_preliminary.py
 python plot_time.py                                  # about 45 s
 python plot_space.py                                 # about 3 minutes, 5 GB of memory
@@ -51,7 +60,7 @@ the caption store, so run all four after a change to keep `figures.tex` complete
 Every figure is drawn at its print size for an A4 page with 2.5 cm margins (16 cm, or 6.3 in, of text
 width): titles and axis labels at 8 pt, tick labels at 7 pt, light lines, and no text under the plot.
 The explanation that used to sit under each figure is now its caption, generated with the figure from
-the same numbers. In LaTeX, set `\graphicspath{{task1_revision/outputs/}}` and `\input` the blocks
+the same numbers. In LaTeX, set `\graphicspath{{task1/outputs/}}` and `\input` the blocks
 from `outputs/figures.tex`, or copy single blocks; keep the stored widths so the lettering prints at
 7-8 pt next to 10 pt captions. `11_anomalies` is meant for the appendix, and its two-sentence summary
 for the main text is stored as its body text.
