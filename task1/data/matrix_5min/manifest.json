@@ -1,0 +1,41 @@
+{
+  "origin_local": "2017-01-01T00:00:00+08:00",
+  "slot_seconds": 300,
+  "stations": 91,
+  "year_counts": {
+    "2017": {
+      "slots": 105120,
+      "readings": 5256020
+    },
+    "2018": {
+      "slots": 105120,
+      "readings": 4594246
+    },
+    "2019": {
+      "slots": 105120,
+      "readings": 5026862
+    },
+    "2020": {
+      "slots": 105408,
+      "readings": 6334473
+    },
+    "2021": {
+      "slots": 105120,
+      "readings": 7044646
+    },
+    "2022": {
+      "slots": 105120,
+      "readings": 7133230
+    },
+    "2023": {
+      "slots": 105120,
+      "readings": 6742890
+    },
+    "2024": {
+      "slots": 105408,
+      "readings": 6406260
+    }
+  },
+  "total_readings": 48538627,
+  "note": "Rows are complete five-minute slots; null means no reading, not zero rain."
+}

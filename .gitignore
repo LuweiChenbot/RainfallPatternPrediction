@@ -17,6 +17,13 @@ models/
 !task2/models/**/data/
 !task2/models/**/*.parquet
 
+# Task 1 results that Task 2 starts from (small): the five-minute station matrix and the map boundary
+!task1/data/
+task1/data/*
+!task1/data/matrix_5min/
+!task1/data/external/
+!task1/data/matrix_5min/**/*.parquet
+
 # Local Spark files
 spark-warehouse/
 metastore_db/

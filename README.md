@@ -13,34 +13,31 @@ readings from 91 stations).
 | Requirement | Where |
 |---|---|
 | Source code | `task1/code/` and `task2/code/`, `task2/notebooks/`, `task2/run_pipeline.py` |
-| How to run it | this README |
-| Trained model | `task2/models/`: `rf/` (random forest, 49 MB), `lr/` (logistic regression), `mapper.json` (threshold mapper) |
-| Results | `task2/results/` (score tables), `task1/docs/` and `task1/results/` (data-quality findings and audit tables) |
-| Report | the LaTeX source of pdf is in `report/` |
+| How to run it | please read through this readme |
+| Trained model | saved as `task2/models/`: `rf/` (random forest, 49 MB), `lr/` (logistic regression), `mapper.json` (threshold mapper) |
+| Results | `task2/results/` (performance score tables), `task1/docs/` and `task1/results/` (data-quality findings and audit tables) |
+| Report | `report/` |
 
-```text
-README.md, requirements.txt, .env.example
-task1/
-  code/       rainfall_audit, prepare_base_data, prepare_temporal_data, fetch_boundary, build_matrix, common, plot_*.py
-  docs/       data_quality_findings.md, S107_gauge_fault_2022_08.txt
-  results/    data_quality_audit/ (audit tables)
-task2/
-  code/       config, features, baselines, models, mapper, evaluate, predict, plot_results, build_replay
-  notebooks/  the pipeline, 01 to 10
-  run_pipeline.py
-  models/     final random forest, logistic regression, threshold mapper
-  results/    score tables: validation 2023 and test 2024
-  demo/       rain_replay.html, an interactive page with every 2024 forecast
-  FEATURES.md, MODELS.md   every feature and model written out as formulas
-report/       LaTeX source and figures
+
+**What you can do without the data**
+- Open `task2/demo/rain_replay.html` in a browser (no server or Python needed) to look up the forest's forecast for any
+  station and time of 2024.
+- Read the results in `task2/results/`, the feature and model definitions in `task2/FEATURES.md` and
+  `task2/MODELS.md`, and the data-quality findings in `task1/docs/data_quality_findings.md`.
+
+**What you can run.** The five-minute station matrix, the result of Task 1, is included in `task1/data/matrix_5min/`,
+so the raw data is not needed to run Task 2. After [Setup](#setup), build the feature tables once and make a forecast
+with the saved models:
+
+```bash
+python task2/run_pipeline.py 01 02 05 06 08      # labels and feature tables (Tiers 0 to 3)
+python task2/code/predict.py S90 "2024-12-29 16:40" 5
 ```
 
-Not included (about 14 GB, generated or downloaded): `data/`, `task1/data/`, `task1/outputs/`, `task2/data/`,
-`task2/outputs/`, `audit_results/`.
-
-**Without the data** you can open `task2/demo/rain_replay.html` in a browser (no server or Python needed) and read
-`task2/results/`, `task2/FEATURES.md`, `task2/MODELS.md` and `task1/docs/data_quality_findings.md`. Running the code, or
-`task2/code/predict.py` with the saved models, needs the data pipeline below.
+The forecast should be 0.941 (random forest), with 65 mm observed. Do not run notebook 09 (`python task2/run_pipeline.py`
+without a list runs it): it refits the models and overwrites `task2/models/`, and the submitted ones took about 10 hours
+to fit on a 32-core, 256 GB machine. The raw data is needed only to rebuild the matrix, see
+[Task 1](#task-1-data-quality-and-rainfall-patterns).
 
 ## Setup
 
@@ -71,60 +68,32 @@ Not included (about 14 GB, generated or downloaded): `data/`, `task1/data/`, `ta
 
 ## Data
 
-Download the eight annual files from the
-[Historical Rainfall across Singapore collection](https://data.gov.sg/collections/2279/view) into `data/` at the
-repository root (`HistoricalRainfallacrossSingapore2017.csv` to `...2024.csv`). Task 1 turns them into the
-five-minute station matrix `task1/data/matrix_5min/` (6.6 MB), the only input of Task 2. If another machine has that
-folder, copy it to the same place instead of running Task 1's preparation.
+The station matrix `task1/data/matrix_5min/` (6.6 MB) and the map boundary `task1/data/external/` are included in the
+repository; the matrix is the only input of Task 2. To rebuild the matrix from the raw files, download the eight annual
+files from the [Historical Rainfall across Singapore collection](https://data.gov.sg/collections/2279/view) into `data/`
+at the repository root (`HistoricalRainfallacrossSingapore2017.csv` to `...2024.csv`) and run the Task 1 commands below.
 
 ## Task 1: data quality and rainfall patterns
 
-From the repository root, with the raw files in `data/`:
+The result of the last command below, the station matrix, is already included in the repository, so you can skip this
+section and go to Task 2. Run it only to rebuild the matrix from the raw files in `data/` (from the repository root).
+`build_matrix.py` refuses to overwrite an existing matrix, so delete `task1/data/matrix_5min/` first:
 
 ```sh
-python task1/code/rainfall_audit.py --data-dir data --output-dir audit_results            # optional: audit tables
 python task1/code/prepare_base_data.py --data-dir data --output-dir data/processed/rainfall_base    # CSV -> Parquet, 48,538,713 readings
-python task1/code/prepare_temporal_data.py --input-dir data/processed/rainfall_base --output-dir data/processed/rainfall_aligned   # five-minute grid, 86 duplicates resolved
-python task1/code/fetch_boundary.py                                                       # map outline
-python task1/code/build_matrix.py                                                         # station matrix (null = no reading)
-cd task1/code
-python plot_preliminary.py
-python plot_time.py
-python plot_space.py
-python plot_amount.py
+python task1/code/prepare_temporal_data.py --input-dir data/processed/rainfall_base --output-dir data/processed/rainfall_aligned
+# optional, needs internet: the map outline is already included in task1/data/external/
+python task1/code/fetch_boundary.py                                                  
+# station matrix (essential for task2)
+python task1/code/build_matrix.py                                                  
 ```
-
-`build_matrix.py` refuses to overwrite an existing matrix. The plot scripts write figures, captions, tables and
-`figures.tex` to `task1/outputs/`; each adds to the caption store, so run all four. Figures are drawn at A4 print size
-(6.3 in text width); in LaTeX set `\graphicspath{{task1/outputs/}}` and `\input` the blocks of `figures.tex`.
-
-| Figure | Shows |
-|---|---|
-| 00_coverage_by_month | which stations reported when |
-| 10_seasonal_cycle | monthly cycle and its sine/cosine fit |
-| 11_anomalies (appendix) | monthly anomalies and annual means, with the coverage-cutoff check |
-| 12_diurnal | daily cycle, split into frequency and intensity |
-| 13_month_hour | how the daily cycle changes by month |
-| 20_station_map | relative wetness and rainfall regions by station |
-| 21_correlation_dynamics | station correlation against distance, 5 minutes to 1 day |
-| 23_lead_lag | storm direction and speed by season |
-| 31_persistence | probability of a wet day after a wet or dry day |
-
-Definitions:
-- Rates are exposure-normalised (rain per observed interval, scaled to a day), with equal weight per station. Monthly
-  figures use station-months with at least 90% coverage; annual figures use station-years with at least 80%.
-- Wrong readings are set to missing before any rainfall figure (`00` uses the raw readings): 18 stuck station-months and
-  the faulty periods in `task2/code/config.py` (S107 19-22 Aug 2022, S36 Feb 2019-Aug 2021), 128,849 readings. Missing
-  readings are never treated as zero.
-- A wet reading has more than 0 mm; a wet day at least 1 mm (complete days only).
-- Seasons: NE monsoon Dec-Mar, SW monsoon Jun-Sep, inter-monsoon Apr-May and Oct-Nov.
 
 ## Task 2: predicting rain in the next 30 minutes
 
 Given a station, a prediction time and a threshold θ, the models estimate P(rainfall in the next 30 minutes > θ).
 `task2/FEATURES.md` and `task2/MODELS.md` define the label, the 58 features and each model.
 
-**Run** (needs the Task 1 station matrix):
+**Run** (the Task 1 station matrix is included):
 
 ```bash
 python task2/run_pipeline.py             # all notebooks, in pipeline order 01, 02, 05, 06, 08, 03, 04, 07, 09, 10

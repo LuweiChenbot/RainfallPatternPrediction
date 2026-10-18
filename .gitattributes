@@ -1,2 +1,4 @@
 # Saved Spark models carry .crc checksums: keep their bytes identical on every OS
 task2/models/** -text
+# Same for the station matrix: Spark checks its .crc files against the bytes
+task1/data/matrix_5min/** -text
